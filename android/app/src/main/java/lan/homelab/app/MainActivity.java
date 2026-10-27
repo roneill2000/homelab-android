@@ -24,6 +24,43 @@ import com.getcapacitor.WebViewListener;
 
 public class MainActivity extends BridgeActivity {
 
+    private OnBackPressedCallback backCallback;
+
+    public class NativeBridge {
+        @JavascriptInterface
+        public void tick() {
+            runOnUiThread(() -> {
+                View v = getBridge() != null ? getBridge().getWebView() : null;
+                if (v != null) v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+            });
+        }
+
+        @JavascriptInterface
+        public void tap() {
+            runOnUiThread(() -> {
+                View v = getBridge() != null ? getBridge().getWebView() : null;
+                if (v != null) v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            });
+        }
+
+        @JavascriptInterface
+        public void snap() {
+            runOnUiThread(() -> {
+                View v = getBridge() != null ? getBridge().getWebView() : null;
+                if (v != null) v.performHapticFeedback(HapticFeedbackConstants.CONFIRM);
+            });
+        }
+
+        @JavascriptInterface
+        public void setBackEnabled(boolean enabled) {
+            runOnUiThread(() -> {
+                if (backCallback != null) {
+                    backCallback.setEnabled(enabled);
+                }
+            });
+        }
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,30 +118,10 @@ public class MainActivity extends BridgeActivity {
 
             WebView.setWebContentsDebuggingEnabled(true);
 
-            // Expose tactile feedback directly to JavaScript
-            webView.addJavascriptInterface(new Object() {
-                @JavascriptInterface
-                public void tick() {
-                    runOnUiThread(() -> {
-                        View v = getBridge() != null ? getBridge().getWebView() : null;
-                        if (v != null) v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
-                    });
-                }
-                @JavascriptInterface
-                public void tap() {
-                    runOnUiThread(() -> {
-                        View v = getBridge() != null ? getBridge().getWebView() : null;
-                        if (v != null) v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
-                    });
-                }
-                @JavascriptInterface
-                public void snap() {
-                    runOnUiThread(() -> {
-                        View v = getBridge() != null ? getBridge().getWebView() : null;
-                        if (v != null) v.performHapticFeedback(HapticFeedbackConstants.CONFIRM);
-                    });
-                }
-            }, "AndroidHaptics");
+            // Expose tactile feedback and predictive back control directly to JavaScript
+            NativeBridge bridge = new NativeBridge();
+            webView.addJavascriptInterface(bridge, "AndroidHaptics");
+            webView.addJavascriptInterface(bridge, "AndroidBridge");
         }
 
         Bridge bridge = getBridge();
@@ -122,8 +139,12 @@ public class MainActivity extends BridgeActivity {
             });
         }
 
-        // 4. Hardware & Predictive Back handling (modal-aware with gesture progress)
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+        // 4. Hardware & Predictive Back handling:
+        // Callback is dynamically enabled/disabled by the web app (via setBackEnabled).
+        // When at the root (Overview with no modals), it is disabled so Android 14/15
+        // executes smooth native Back-to-Home / Back-to-previous-task predictive window animations.
+        // When an overlay or sub-page is active, it is enabled to preview modal collapse and navigate back.
+        backCallback = new OnBackPressedCallback(false) {
             @Override
             public void handleOnBackStarted(@NonNull BackEventCompat backEvent) {
                 WebView view = getBridge() != null ? getBridge().getWebView() : null;
@@ -164,40 +185,33 @@ public class MainActivity extends BridgeActivity {
                 WebView view = getBridge() != null ? getBridge().getWebView() : null;
                 if (view != null) {
                     view.evaluateJavascript(
-                        "window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'commit' } }));",
-                        null
-                    );
-                    view.evaluateJavascript(
                         "(function() {" +
+                        "  window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'commit' } }));" +
                         "  var modals = document.querySelectorAll('.m3-search-view, .m3-dialog, .m3-nav-drawer.is-modal.open, .m3-xrail.is-modal, .m3-scrim');" +
                         "  var open = Array.prototype.some.call(modals, function(m) {" +
                         "    return window.getComputedStyle(m).display !== 'none' && m.getClientRects().length > 0;" +
                         "  });" +
-                        "  if (!open) return false;" +
-                        "  var active = document.activeElement;" +
-                        "  var target = (active && active !== document.body) ? active : (document.querySelector('[role=dialog]') || document);" +
-                        "  target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));" +
-                        "  return true;" +
+                        "  if (open) {" +
+                        "    var active = document.activeElement;" +
+                        "    var target = (active && active !== document.body) ? active : (document.querySelector('[role=dialog]') || document);" +
+                        "    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));" +
+                        "    return;" +
+                        "  }" +
+                        "  if (window.history.length > 1 && window.location.hash !== '' && window.location.hash !== '#/' && window.location.hash !== '#/overview') {" +
+                        "    window.history.back();" +
+                        "    return;" +
+                        "  }" +
+                        "  if (window.__navigateOverview) {" +
+                        "    window.__navigateOverview();" +
+                        "  }" +
                         "})()",
-                        value -> {
-                            if (!"true".equals(value)) {
-                                if (view.canGoBack()) {
-                                    view.goBack();
-                                } else {
-                                    setEnabled(false);
-                                    getOnBackPressedDispatcher().onBackPressed();
-                                    setEnabled(true);
-                                }
-                            }
-                        }
+                        null
                     );
-                } else {
-                    setEnabled(false);
-                    getOnBackPressedDispatcher().onBackPressed();
-                    setEnabled(true);
                 }
             }
-        });
+        };
+
+        getOnBackPressedDispatcher().addCallback(this, backCallback);
     }
 
     private void injectIconStyleFix(WebView webView) {
