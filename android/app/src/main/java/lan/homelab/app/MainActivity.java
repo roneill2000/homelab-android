@@ -3,7 +3,6 @@ package lan.homelab.app;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.Display;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -16,6 +15,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.WebViewListener;
 
 public class MainActivity extends BridgeActivity {
     @Override
@@ -24,7 +24,7 @@ public class MainActivity extends BridgeActivity {
 
         Window window = getWindow();
 
-        // 1. Inset window content so the status bar and camera cutout never overlay dashboard content
+        // 1. Maintain inset barrier so the status bar and camera notch never overlay dashboard content
         WindowCompat.setDecorFitsSystemWindows(window, true);
 
         View contentView = findViewById(android.R.id.content);
@@ -33,7 +33,9 @@ public class MainActivity extends BridgeActivity {
                 Insets barInsets = insets.getInsets(
                     WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout()
                 );
-                v.setPadding(barInsets.left, barInsets.top, barInsets.right, 0);
+                if (v.getPaddingTop() != barInsets.top || v.getPaddingLeft() != barInsets.left || v.getPaddingRight() != barInsets.right) {
+                    v.setPadding(barInsets.left, barInsets.top, barInsets.right, 0);
+                }
                 return insets;
             });
         }
@@ -48,46 +50,63 @@ public class MainActivity extends BridgeActivity {
             insetsController.setAppearanceLightNavigationBars(false);
         }
 
-        // 2. High refresh rate (e.g. 90Hz / 120Hz display modes)
+        // 2. Request 120Hz display refresh rate directly without altering screen resolution
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            try {
-                Display display = getDisplay();
-                if (display != null) {
-                    Display.Mode[] modes = display.getSupportedModes();
-                    Display.Mode highestMode = null;
-                    float maxRate = 60.0f;
-                    for (Display.Mode mode : modes) {
-                        if (mode.getRefreshRate() > maxRate) {
-                            maxRate = mode.getRefreshRate();
-                            highestMode = mode;
-                        }
-                    }
-                    if (highestMode != null) {
-                        WindowManager.LayoutParams params = window.getAttributes();
-                        params.preferredDisplayModeId = highestMode.getModeId();
-                        params.preferredRefreshRate = maxRate;
-                        window.setAttributes(params);
-                    }
-                }
-            } catch (Exception ignored) {
-            }
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.preferredRefreshRate = 120.0f;
+            window.setAttributes(params);
         }
 
-        // 3. Hardware acceleration & smooth scrolling optimizations
+        // 3. Native performance configuration
         WebView webView = getBridge() != null ? getBridge().getWebView() : null;
         if (webView != null) {
-            // Enable hardware acceleration layer
-            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            // LAYER_TYPE_NONE allows Chromium's internal hardware compositor to draw directly to the window surface
+            // without intermediate Android View offscreen FBO blits.
+            webView.setLayerType(View.LAYER_TYPE_NONE, null);
 
             WebSettings settings = webView.getSettings();
-            // Pre-rasterize offscreen tiles to eliminate scrolling stutter and dropped frames
-            settings.setOffscreenPreRaster(true);
+            // Disable offscreen pre-rastering on ultra-high-resolution displays to avoid CPU raster thrashing during transitions
+            settings.setOffscreenPreRaster(false);
+            settings.setDomStorageEnabled(true);
+            settings.setDatabaseEnabled(true);
+            settings.setCacheMode(WebSettings.LOAD_DEFAULT);
 
             // Disable stretch bounce overscroll
             webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+
+            WebView.setWebContentsDebuggingEnabled(true);
         }
 
-        // 4. Hardware Back button handling
+        // 4. Inject GPU layer acceleration hints on page load to promote service cards & transitions to hardware GPU layers
+        if (getBridge() != null) {
+            getBridge().addWebViewListener(new WebViewListener() {
+                @Override
+                public void onPageLoaded(WebView view) {
+                    super.onPageLoaded(view);
+                    String js = "(function() {" +
+                        "  if (document.getElementById('android-gpu-boost')) return;" +
+                        "  var style = document.createElement('style');" +
+                        "  style.id = 'android-gpu-boost';" +
+                        "  style.textContent = `" +
+                        "    ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {" +
+                        "      will-change: transform, opacity;" +
+                        "      transform: translateZ(0);" +
+                        "      backface-visibility: hidden;" +
+                        "    }" +
+                        "    .service-card, .service-group, .panel, .m3-card, .ov-hero {" +
+                        "      will-change: transform, opacity;" +
+                        "      transform: translateZ(0);" +
+                        "      backface-visibility: hidden;" +
+                        "    }" +
+                        "  `;" +
+                        "  document.head.appendChild(style);" +
+                        "})();";
+                    view.evaluateJavascript(js, null);
+                }
+            });
+        }
+
+        // 5. Hardware Back button handling
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
