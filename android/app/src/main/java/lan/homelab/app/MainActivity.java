@@ -14,7 +14,9 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.WebViewListener;
 
 public class MainActivity extends BridgeActivity {
 
@@ -24,18 +26,19 @@ public class MainActivity extends BridgeActivity {
 
         Window window = getWindow();
 
-        // 1. Maintain inset barrier so system bars (status bar, notch, and navigation bar) never overlay dashboard content
+        // 1. Maintain top inset barrier so status bar and notch never overlay dashboard content
+        // Leave bottom padding at 0 so WebView edge-to-edge passes env(safe-area-inset-bottom) to the dashboard navbar
         WindowCompat.setDecorFitsSystemWindows(window, true);
 
         View contentView = findViewById(android.R.id.content);
         if (contentView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(contentView, (v, insets) -> {
                 Insets barInsets = insets.getInsets(
-                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+                    WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout()
                 );
                 if (v.getPaddingTop() != barInsets.top || v.getPaddingLeft() != barInsets.left ||
-                    v.getPaddingRight() != barInsets.right || v.getPaddingBottom() != barInsets.bottom) {
-                    v.setPadding(barInsets.left, barInsets.top, barInsets.right, barInsets.bottom);
+                    v.getPaddingRight() != barInsets.right || v.getPaddingBottom() != 0) {
+                    v.setPadding(barInsets.left, barInsets.top, barInsets.right, 0);
                 }
                 return insets;
             });
@@ -75,6 +78,21 @@ public class MainActivity extends BridgeActivity {
             WebView.setWebContentsDebuggingEnabled(true);
         }
 
+        Bridge bridge = getBridge();
+        if (bridge != null) {
+            bridge.addWebViewListener(new WebViewListener() {
+                @Override
+                public void onPageLoaded(WebView view) {
+                    injectIconStyleFix(view);
+                }
+
+                @Override
+                public void onPageStarted(WebView view) {
+                    injectIconStyleFix(view);
+                }
+            });
+        }
+
         // 4. Hardware Back button handling
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -88,5 +106,23 @@ public class MainActivity extends BridgeActivity {
                 }
             }
         });
+    }
+
+    private void injectIconStyleFix(WebView webView) {
+        if (webView == null) return;
+        String css = ".material-symbols-rounded { overflow: visible !important; width: auto !important; height: auto !important; min-width: 1em !important; } " +
+                     ".m3-nav-indicator { overflow: visible !important; } " +
+                     ".m3-nav-indicator .material-symbols-rounded { overflow: visible !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; } " +
+                     ".m3-nav-bar__item:last-child .m3-nav-indicator .material-symbols-rounded { transform: translateY(-2px) !important; }";
+
+        String js = "(function() {" +
+                    "  if (document.getElementById('agy-icon-fix')) return;" +
+                    "  var style = document.createElement('style');" +
+                    "  style.id = 'agy-icon-fix';" +
+                    "  style.textContent = '" + css + "';" +
+                    "  (document.head || document.documentElement).appendChild(style);" +
+                    "})();";
+
+        webView.post(() -> webView.evaluateJavascript(js, null));
     }
 }
