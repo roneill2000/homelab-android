@@ -191,7 +191,11 @@ public class MainActivity extends BridgeActivity {
                         "  var open = Array.prototype.some.call(modals, function(m) {" +
                         "    return window.getComputedStyle(m).display !== 'none' && m.getClientRects().length > 0;" +
                         "  });" +
-                        "  if (open) {" +
+                        "  if ((typeof window.__hasOpenOverlay === 'function' && window.__hasOpenOverlay()) || open) {" +
+                        "    if (typeof window.__closeAllOverlays === 'function') {" +
+                        "      window.__closeAllOverlays();" +
+                        "    }" +
+                        "    window.dispatchEvent(new CustomEvent('m3:close-all-overlays'));" +
                         "    var active = document.activeElement;" +
                         "    var target = (active && active !== document.body) ? active : (document.querySelector('[role=dialog]') || document);" +
                         "    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));" +
