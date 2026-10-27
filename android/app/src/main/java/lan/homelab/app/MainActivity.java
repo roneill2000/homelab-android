@@ -15,38 +15,8 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
-import com.getcapacitor.WebViewListener;
 
 public class MainActivity extends BridgeActivity {
-
-    private void applyPerformanceBoost(WebView view) {
-        // Optimize mobile WebView animations:
-        // By animating translateY + opacity without scaling, Chromium avoids re-rasterizing
-        // font glyphs and vector icons on each frame, achieving a rock-solid 120 FPS on Pixel 11 Pro XL.
-        String js = "(function() {" +
-            "  var id = 'perf-boost-styles';" +
-            "  var el = document.getElementById(id);" +
-            "  if (!el) {" +
-            "    el = document.createElement('style');" +
-            "    el.id = id;" +
-            "    document.head.appendChild(el);" +
-            "  }" +
-            "  el.textContent = `" +
-            "    @keyframes m3-arrive {" +
-            "      from { opacity: 0; transform: translateY(14px); }" +
-            "      to { opacity: 1; transform: none; }" +
-            "    }" +
-            "    .service-card, .service-group, .panel, .m3-card, .ov-hero {" +
-            "      will-change: transform, opacity;" +
-            "    }" +
-            "    .m3-nav-bar {" +
-            "      position: fixed !important;" +
-            "      bottom: 0 !important;" +
-            "    }" +
-            "  `;" +
-            "})();";
-        view.evaluateJavascript(js, null);
-    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -94,12 +64,9 @@ public class MainActivity extends BridgeActivity {
             webView.setLayerType(View.LAYER_TYPE_NONE, null);
 
             WebSettings settings = webView.getSettings();
-            // Do not pre-raster massive offscreen heights to prevent CPU raster thrashing during transitions
-            settings.setOffscreenPreRaster(false);
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
             settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-            settings.setEnableSmoothTransition(true);
 
             // Disable stretch bounce overscroll
             webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -107,18 +74,7 @@ public class MainActivity extends BridgeActivity {
             WebView.setWebContentsDebuggingEnabled(true);
         }
 
-        // 4. Inject performance styles on page load
-        if (getBridge() != null) {
-            getBridge().addWebViewListener(new WebViewListener() {
-                @Override
-                public void onPageLoaded(WebView view) {
-                    super.onPageLoaded(view);
-                    applyPerformanceBoost(view);
-                }
-            });
-        }
-
-        // 5. Hardware Back button handling
+        // 4. Hardware Back button handling
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
