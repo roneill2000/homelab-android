@@ -1,0 +1,22 @@
+{
+  "name": "homelab-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Homelab Command Center Android wrapper",
+  "scripts": {
+    "sync": "cap sync",
+    "build:apk": "cd android && ./gradlew assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.6.9",
+    "@capacitor/app": "7.1.2",
+    "@capacitor/core": "7.6.9",
+    "@capacitor/splash-screen": "7.0.5",
+    "@capacitor/status-bar": "7.0.6"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "7.6.9",
+    "typescript": "5.7.3"
+  }
+}
