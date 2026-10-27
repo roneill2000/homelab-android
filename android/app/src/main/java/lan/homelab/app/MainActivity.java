@@ -24,17 +24,18 @@ public class MainActivity extends BridgeActivity {
 
         Window window = getWindow();
 
-        // 1. Maintain inset barrier so the status bar and camera notch never overlay dashboard content
+        // 1. Maintain inset barrier so system bars (status bar, notch, and navigation bar) never overlay dashboard content
         WindowCompat.setDecorFitsSystemWindows(window, true);
 
         View contentView = findViewById(android.R.id.content);
         if (contentView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(contentView, (v, insets) -> {
                 Insets barInsets = insets.getInsets(
-                    WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout()
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
                 );
-                if (v.getPaddingTop() != barInsets.top || v.getPaddingLeft() != barInsets.left || v.getPaddingRight() != barInsets.right) {
-                    v.setPadding(barInsets.left, barInsets.top, barInsets.right, 0);
+                if (v.getPaddingTop() != barInsets.top || v.getPaddingLeft() != barInsets.left ||
+                    v.getPaddingRight() != barInsets.right || v.getPaddingBottom() != barInsets.bottom) {
+                    v.setPadding(barInsets.left, barInsets.top, barInsets.right, barInsets.bottom);
                 }
                 return insets;
             });
