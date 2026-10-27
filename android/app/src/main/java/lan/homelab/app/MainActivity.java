@@ -93,16 +93,37 @@ public class MainActivity extends BridgeActivity {
             });
         }
 
-        // 4. Hardware Back button handling
+        // 4. Hardware Back button handling (modal-aware)
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 WebView view = getBridge() != null ? getBridge().getWebView() : null;
-                if (view != null && view.canGoBack()) {
-                    view.goBack();
+                if (view != null) {
+                    view.evaluateJavascript(
+                        "(function() {" +
+                        "  var modal = document.querySelector('.m3-search-view, .m3-dialog, .m3-nav-drawer.is-modal.open, .m3-xrail.is-modal, .m3-scrim');" +
+                        "  if (modal && window.getComputedStyle(modal).display !== 'none') {" +
+                        "    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));" +
+                        "    return true;" +
+                        "  }" +
+                        "  return false;" +
+                        "})()",
+                        value -> {
+                            if (!"true".equals(value)) {
+                                if (view.canGoBack()) {
+                                    view.goBack();
+                                } else {
+                                    setEnabled(false);
+                                    getOnBackPressedDispatcher().onBackPressed();
+                                    setEnabled(true);
+                                }
+                            }
+                        }
+                    );
                 } else {
                     setEnabled(false);
                     getOnBackPressedDispatcher().onBackPressed();
+                    setEnabled(true);
                 }
             }
         });
