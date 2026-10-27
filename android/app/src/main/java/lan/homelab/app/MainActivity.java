@@ -3,12 +3,16 @@ package lan.homelab.app;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import androidx.activity.BackEventCompat;
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -61,7 +65,7 @@ public class MainActivity extends BridgeActivity {
             window.setAttributes(params);
         }
 
-        // 3. Native performance configuration
+        // 3. Native performance configuration & Haptics bridge
         WebView webView = getBridge() != null ? getBridge().getWebView() : null;
         if (webView != null) {
             // LAYER_TYPE_NONE allows Chromium's internal GPU compositor to draw directly to the window surface
@@ -76,6 +80,31 @@ public class MainActivity extends BridgeActivity {
             webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
             WebView.setWebContentsDebuggingEnabled(true);
+
+            // Expose tactile feedback directly to JavaScript
+            webView.addJavascriptInterface(new Object() {
+                @JavascriptInterface
+                public void tick() {
+                    runOnUiThread(() -> {
+                        View v = getBridge() != null ? getBridge().getWebView() : null;
+                        if (v != null) v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+                    });
+                }
+                @JavascriptInterface
+                public void tap() {
+                    runOnUiThread(() -> {
+                        View v = getBridge() != null ? getBridge().getWebView() : null;
+                        if (v != null) v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    });
+                }
+                @JavascriptInterface
+                public void snap() {
+                    runOnUiThread(() -> {
+                        View v = getBridge() != null ? getBridge().getWebView() : null;
+                        if (v != null) v.performHapticFeedback(HapticFeedbackConstants.CONFIRM);
+                    });
+                }
+            }, "AndroidHaptics");
         }
 
         Bridge bridge = getBridge();
@@ -93,16 +122,52 @@ public class MainActivity extends BridgeActivity {
             });
         }
 
-        // 4. Hardware Back button handling (modal-aware)
+        // 4. Hardware & Predictive Back handling (modal-aware with gesture progress)
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackStarted(@NonNull BackEventCompat backEvent) {
+                WebView view = getBridge() != null ? getBridge().getWebView() : null;
+                if (view != null) {
+                    view.evaluateJavascript(
+                        "window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'start', progress: " +
+                        backEvent.getProgress() + ", edge: " + backEvent.getSwipeEdge() + " } }));",
+                        null
+                    );
+                }
+            }
+
+            @Override
+            public void handleOnBackProgressed(@NonNull BackEventCompat backEvent) {
+                WebView view = getBridge() != null ? getBridge().getWebView() : null;
+                if (view != null) {
+                    view.evaluateJavascript(
+                        "window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'progress', progress: " +
+                        backEvent.getProgress() + ", edge: " + backEvent.getSwipeEdge() + " } }));",
+                        null
+                    );
+                }
+            }
+
+            @Override
+            public void handleOnBackCancelled() {
+                WebView view = getBridge() != null ? getBridge().getWebView() : null;
+                if (view != null) {
+                    view.evaluateJavascript(
+                        "window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'cancel' } }));",
+                        null
+                    );
+                }
+            }
+
             @Override
             public void handleOnBackPressed() {
                 WebView view = getBridge() != null ? getBridge().getWebView() : null;
                 if (view != null) {
                     view.evaluateJavascript(
-                        // querySelector would return the first match in document order (often the drawer's hidden scrim),
-                        // so check every candidate. Dispatch Escape on the focused element so it bubbles through dialog
-                        // onKeyDown handlers up to window; an event dispatched on window never reaches them.
+                        "window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'commit' } }));",
+                        null
+                    );
+                    view.evaluateJavascript(
                         "(function() {" +
                         "  var modals = document.querySelectorAll('.m3-search-view, .m3-dialog, .m3-nav-drawer.is-modal.open, .m3-xrail.is-modal, .m3-scrim');" +
                         "  var open = Array.prototype.some.call(modals, function(m) {" +

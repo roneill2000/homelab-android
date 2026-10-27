@@ -25,7 +25,7 @@ The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-rel
 
 ### Verification
 
-- **SHA-256:** `b43b2a172b915e852f0960ed47c8bfd17931aa91ab8a4496740eca377c2b348a`
+- **SHA-256:** `f91a6a81eb56873e0a0896e44bf708117ae16e6d6a4835a9cc86e966a99f9609`
 - **Signing:** signed with v1, v2, and v3 schemes (valid to 2054).
 
 ---
