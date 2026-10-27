@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Signed](https://img.shields.io/badge/signatures-v1%20%7C%20v2%20%7C%20v3-brightgreen.svg)](release/Homelab-release.apk)
 
-The official native Android wrapper for the [Homelab Command Center](https://github.com/roneill2000/homelab-dashboard) (`http://192.168.0.2`). Built on Capacitor 6 and optimized for high-refresh-rate Google Pixel devices (including Pixel 11 Pro XL).
+The official native Android wrapper for the [Homelab Command Center](https://github.com/roneill2000/homelab-dashboard) (`http://192.168.0.2`). Built on Capacitor 6.
 
 ---
 
