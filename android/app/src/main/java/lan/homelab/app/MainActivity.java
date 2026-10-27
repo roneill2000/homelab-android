@@ -100,13 +100,19 @@ public class MainActivity extends BridgeActivity {
                 WebView view = getBridge() != null ? getBridge().getWebView() : null;
                 if (view != null) {
                     view.evaluateJavascript(
+                        // querySelector would return the first match in document order (often the drawer's hidden scrim),
+                        // so check every candidate. Dispatch Escape on the focused element so it bubbles through dialog
+                        // onKeyDown handlers up to window; an event dispatched on window never reaches them.
                         "(function() {" +
-                        "  var modal = document.querySelector('.m3-search-view, .m3-dialog, .m3-nav-drawer.is-modal.open, .m3-xrail.is-modal, .m3-scrim');" +
-                        "  if (modal && window.getComputedStyle(modal).display !== 'none') {" +
-                        "    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));" +
-                        "    return true;" +
-                        "  }" +
-                        "  return false;" +
+                        "  var modals = document.querySelectorAll('.m3-search-view, .m3-dialog, .m3-nav-drawer.is-modal.open, .m3-xrail.is-modal, .m3-scrim');" +
+                        "  var open = Array.prototype.some.call(modals, function(m) {" +
+                        "    return window.getComputedStyle(m).display !== 'none' && m.getClientRects().length > 0;" +
+                        "  });" +
+                        "  if (!open) return false;" +
+                        "  var active = document.activeElement;" +
+                        "  var target = (active && active !== document.body) ? active : (document.querySelector('[role=dialog]') || document);" +
+                        "  target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));" +
+                        "  return true;" +
                         "})()",
                         value -> {
                             if (!"true".equals(value)) {
