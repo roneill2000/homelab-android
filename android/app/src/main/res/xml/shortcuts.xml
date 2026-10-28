@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press the app icon. Explicit intents to MainActivity, which only accepts allowlisted homelab:// links. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="network" android:enabled="true" android:icon="@drawable/ic_shortcut_network"
+        android:shortcutShortLabel="@string/shortcut_network" android:shortcutLongLabel="@string/shortcut_network">
+        <intent android:action="android.intent.action.VIEW" android:data="homelab://view/network"
+            android:targetPackage="lan.homelab.app" android:targetClass="lan.homelab.app.MainActivity"/>
+    </shortcut>
+    <shortcut android:shortcutId="storage" android:enabled="true" android:icon="@drawable/ic_shortcut_storage"
+        android:shortcutShortLabel="@string/shortcut_storage" android:shortcutLongLabel="@string/shortcut_storage">
+        <intent android:action="android.intent.action.VIEW" android:data="homelab://view/storage"
+            android:targetPackage="lan.homelab.app" android:targetClass="lan.homelab.app.MainActivity"/>
+    </shortcut>
+    <shortcut android:shortcutId="wake" android:enabled="true" android:icon="@drawable/ic_shortcut_wake"
+        android:shortcutShortLabel="@string/shortcut_wake" android:shortcutLongLabel="@string/shortcut_wake_long">
+        <intent android:action="android.intent.action.VIEW" android:data="homelab://action/wake-pc"
+            android:targetPackage="lan.homelab.app" android:targetClass="lan.homelab.app.MainActivity"/>
+    </shortcut>
+</shortcuts>

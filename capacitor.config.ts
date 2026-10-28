@@ -18,8 +18,9 @@ const config: CapacitorConfig = {
       disableBackButtonHandler: true,
     },
     SplashScreen: {
-      launchShowDuration: 0,
-      launchAutoHide: true,
+      // Hidden by the page once it has painted (AndroidBridge.ready), or by MainActivity after 3 s.
+      launchShowDuration: 3000,
+      launchAutoHide: false,
       backgroundColor: '#091613',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',

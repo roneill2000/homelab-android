@@ -1,6 +1,15 @@
 package lan.homelab.app;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Pattern;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,6 +35,11 @@ import com.getcapacitor.WebViewListener;
 public class MainActivity extends BridgeActivity {
 
     private OnBackPressedCallback backCallback;
+    private static final Pattern HEX = Pattern.compile("^#[0-9a-fA-F]{6}$");
+    private static final Set<String> PAGES = new HashSet<>(Arrays.asList(
+        "overview", "services", "ai", "media", "network", "fleet", "storage", "infra", "updates"));
+    private volatile boolean webReady = false;
+    private String pendingJs = null;
 
     public class NativeBridge {
         @JavascriptInterface
@@ -50,6 +64,32 @@ public class MainActivity extends BridgeActivity {
                 View v = getBridge() != null ? getBridge().getWebView() : null;
                 if (v != null) v.performHapticFeedback(HapticFeedbackConstants.CONFIRM);
             });
+        }
+
+        // System bar colours from the page (theme-aware). Validated, applied, and remembered for the next cold start.
+        @JavascriptInterface
+        public void setSystemBars(String statusHex, String navHex, boolean lightIcons) {
+            if (statusHex == null || navHex == null || !HEX.matcher(statusHex).matches() || !HEX.matcher(navHex).matches()) return;
+            getSharedPreferences("homelab", MODE_PRIVATE).edit()
+                .putString("status", statusHex).putString("nav", navHex).putBoolean("light", lightIcons).apply();
+            runOnUiThread(() -> applySystemBars(statusHex, navHex, lightIcons));
+        }
+
+        // The dashboard has painted: hide the splash and run any deep link that arrived before the page was ready.
+        @JavascriptInterface
+        public void ready() {
+            runOnUiThread(() -> {
+                webReady = true;
+                hideSplash();
+                if (pendingJs != null) { runJs(pendingJs); pendingJs = null; }
+            });
+        }
+
+        // Android 12+ wallpaper accent for the optional Material You colours; empty on older Android.
+        @JavascriptInterface
+        public String getWallpaperSeed() {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return "";
+            return String.format("#%06x", 0xFFFFFF & getColor(android.R.color.system_accent1_500));
         }
 
         @JavascriptInterface
@@ -86,15 +126,9 @@ public class MainActivity extends BridgeActivity {
             });
         }
 
-        // Set dark background for status bar & navigation bar with light icons
-        int darkColor = Color.parseColor("#091613");
-        window.setStatusBarColor(darkColor);
-        window.setNavigationBarColor(darkColor);
-        WindowInsetsControllerCompat insetsController = WindowCompat.getInsetsController(window, window.getDecorView());
-        if (insetsController != null) {
-            insetsController.setAppearanceLightStatusBars(false);
-            insetsController.setAppearanceLightNavigationBars(false);
-        }
+        // System bars: the colours the page sent last time (light theme stays light on a cold start), dark pine by default.
+        SharedPreferences prefs = getSharedPreferences("homelab", MODE_PRIVATE);
+        applySystemBars(prefs.getString("status", "#091613"), prefs.getString("nav", "#091613"), prefs.getBoolean("light", false));
 
         // 2. Request 120Hz display refresh rate directly without altering screen resolution
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -214,6 +248,52 @@ public class MainActivity extends BridgeActivity {
         };
 
         getOnBackPressedDispatcher().addCallback(this, backCallback);
+
+        // The splash stays until the page reports ready(); never longer than 3 s (server down, offline page).
+        new Handler(Looper.getMainLooper()).postDelayed(this::hideSplash, 3000);
+        handleLink(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handleLink(intent);
+    }
+
+    // Launcher shortcuts and the widget send homelab://view/<page> or homelab://action/wake-pc. Only allowlisted
+    // constants reach JavaScript; anything else is ignored.
+    private void handleLink(Intent intent) {
+        Uri uri = intent != null ? intent.getData() : null;
+        if (uri == null || !"homelab".equals(uri.getScheme())) return;
+        String kind = uri.getHost(), arg = uri.getLastPathSegment();
+        String js = null;
+        if ("view".equals(kind) && arg != null && PAGES.contains(arg)) {
+            js = "window.__homelabOpen&&window.__homelabOpen('" + arg + "')";
+        } else if ("action".equals(kind) && "wake-pc".equals(arg)) {
+            js = "window.__homelabShortcut&&window.__homelabShortcut('wake-pc')";
+        }
+        if (js == null) return;
+        if (webReady) runJs(js); else pendingJs = js;
+    }
+
+    private void runJs(String js) {
+        WebView view = getBridge() != null ? getBridge().getWebView() : null;
+        if (view != null) view.evaluateJavascript(js, null);
+    }
+
+    private void hideSplash() {
+        runJs("window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.SplashScreen&&Capacitor.Plugins.SplashScreen.hide({fadeOutDuration:200})");
+    }
+
+    private void applySystemBars(String statusHex, String navHex, boolean lightIcons) {
+        Window w = getWindow();
+        w.setStatusBarColor(Color.parseColor(statusHex));
+        w.setNavigationBarColor(Color.parseColor(navHex));
+        WindowInsetsControllerCompat c = WindowCompat.getInsetsController(w, w.getDecorView());
+        if (c != null) {
+            c.setAppearanceLightStatusBars(lightIcons);
+            c.setAppearanceLightNavigationBars(lightIcons);
+        }
     }
 
     private void injectIconStyleFix(WebView webView) {

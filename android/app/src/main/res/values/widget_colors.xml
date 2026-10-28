@@ -1,0 +1,9 @@
+<resources>
+    <color name="shortcut_bg">#FF1F4D45</color>
+    <color name="widget_bg">#FFE3EEEA</color>
+    <color name="widget_tile">#FFFFFFFF</color>
+    <color name="widget_on">#FF0F1F1C</color>
+    <color name="widget_on_variant">#FF3F4946</color>
+    <color name="widget_accent">#FF1F4D45</color>
+    <color name="widget_attention">#FFBA1A1A</color>
+</resources>
