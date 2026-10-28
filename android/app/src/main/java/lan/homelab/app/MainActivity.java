@@ -1,5 +1,6 @@
 package lan.homelab.app;
 
+import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -116,7 +117,8 @@ public class MainActivity extends BridgeActivity {
             // Disable stretch bounce overscroll
             webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
-            WebView.setWebContentsDebuggingEnabled(true);
+            // Remote DevTools only in debuggable builds; a release APK should not expose the WebView over adb.
+            WebView.setWebContentsDebuggingEnabled((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0);
 
             // Expose tactile feedback and predictive back control directly to JavaScript
             NativeBridge bridge = new NativeBridge();
