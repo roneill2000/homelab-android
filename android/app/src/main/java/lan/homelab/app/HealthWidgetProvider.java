@@ -78,11 +78,12 @@ public class HealthWidgetProvider extends AppWidgetProvider {
                 sizes.put(new SizeF(110f, 40f), build(context, R.layout.widget_small));
                 sizes.put(new SizeF(110f, 110f), build(context, R.layout.widget_medium));
                 sizes.put(new SizeF(250f, 110f), build(context, R.layout.widget_large));
+                sizes.put(new SizeF(250f, 260f), build(context, R.layout.widget_xl));
                 views = new RemoteViews(sizes);
             } else {
                 Bundle o = manager.getAppWidgetOptions(id);
                 int w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH), h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
-                views = build(context, h < 100 ? R.layout.widget_small : w >= 250 ? R.layout.widget_large : R.layout.widget_medium);
+                views = build(context, h < 100 ? R.layout.widget_small : w >= 250 && h >= 260 ? R.layout.widget_xl : w >= 250 ? R.layout.widget_large : R.layout.widget_medium);
             }
             manager.updateAppWidget(id, views);
         }
@@ -148,6 +149,28 @@ public class HealthWidgetProvider extends AppWidgetProvider {
             v.setOnClickPendingIntent(R.id.row_problems, open(context, "view/overview", 2));
             Intent refresh = new Intent(context, HealthWidgetProvider.class).setAction(ACTION_REFRESH);
             v.setOnClickPendingIntent(R.id.widget_refresh, PendingIntent.getBroadcast(context, 9, refresh, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+        }
+        if (layout == R.layout.widget_xl) {
+            // Big GPU tiles (dashes when the PC is off or the reader didn't answer) and a context footer.
+            JSONObject pc = d != null ? d.optJSONObject("pc") : null;
+            JSONObject gpu = pc != null ? pc.optJSONObject("gpu") : null;
+            v.setTextViewText(R.id.big_power, gpu == null || gpu.isNull("power_w") ? "—" : String.format("%.0f", gpu.optDouble("power_w")));
+            v.setTextViewText(R.id.big_temp, gpu == null || gpu.isNull("temperature_c") ? "—" : String.valueOf(gpu.optInt("temperature_c")));
+            v.setTextViewText(R.id.big_load, gpu == null || gpu.isNull("utilization_pct") ? "—" : String.valueOf(gpu.optInt("utilization_pct")));
+            v.setTextViewText(R.id.big_vram, gpu == null || gpu.isNull("vram_used_mib") ? "—" : String.format("%.1f", gpu.optDouble("vram_used_mib") / 1024));
+            // The tiles say it; the detail line keeps only the model / tok/s.
+            if (pc != null) {
+                StringBuilder m = new StringBuilder();
+                if (!pc.isNull("model")) m.append(pc.optString("model"));
+                if (pc.has("tok_s")) m.append(m.length() > 0 ? " · " : "").append(String.format("%.0f tok/s", pc.optDouble("tok_s")));
+                v.setTextViewText(R.id.widget_detail, away ? detail : m.toString());
+            }
+            StringBuilder f = new StringBuilder();
+            if (d != null && !d.isNull("services_up") && !d.isNull("services_known")) f.append(d.optLong("services_up")).append("/").append(d.optLong("services_known")).append(" services up");
+            if (okAt > 0) f.append(f.length() > 0 ? " · " : "").append(away ? context.getString(R.string.widget_last_checked) : context.getString(R.string.widget_updated))
+                .append(" ").append(DateFormat.getTimeInstance(DateFormat.SHORT).format(new Date(okAt)));
+            v.setTextViewText(R.id.widget_updated, f.toString());
+            v.setOnClickPendingIntent(R.id.gpu_grid, open(context, "view/ai", 5));
         }
         v.setOnClickPendingIntent(R.id.widget_root, open(context, "view/ai", 0));
         return v;
