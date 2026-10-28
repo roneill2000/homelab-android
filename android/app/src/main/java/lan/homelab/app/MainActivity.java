@@ -186,19 +186,13 @@ public class MainActivity extends BridgeActivity {
                 if (view != null) {
                     view.evaluateJavascript(
                         "(function() {" +
-                        "  window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'commit' } }));" +
                         "  var modals = document.querySelectorAll('.m3-search-view, .m3-dialog, .m3-nav-drawer.is-modal.open, .m3-xrail.is-modal, .m3-scrim');" +
                         "  var open = Array.prototype.some.call(modals, function(m) {" +
                         "    return window.getComputedStyle(m).display !== 'none' && m.getClientRects().length > 0;" +
                         "  });" +
-                        "  if ((typeof window.__hasOpenOverlay === 'function' && window.__hasOpenOverlay()) || open) {" +
-                        "    if (typeof window.__closeAllOverlays === 'function') {" +
-                        "      window.__closeAllOverlays();" +
-                        "    }" +
-                        "    window.dispatchEvent(new CustomEvent('m3:close-all-overlays'));" +
-                        "    var active = document.activeElement;" +
-                        "    var target = (active && active !== document.body) ? active : (document.querySelector('[role=dialog]') || document);" +
-                        "    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));" +
+                        "  var hasOverlay = (typeof window.__hasOpenOverlay === 'function' && window.__hasOpenOverlay()) || open;" +
+                        "  window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'commit' } }));" +
+                        "  if (hasOverlay) {" +
                         "    return;" +
                         "  }" +
                         "  if (window.history.length > 1 && window.location.hash !== '' && window.location.hash !== '#/' && window.location.hash !== '#/overview') {" +
