@@ -8,8 +8,15 @@ const config: CapacitorConfig = {
   server: {
     url: 'http://192.168.0.2',
     cleartext: true,
+    // Bundled page shown when the dashboard can't be reached (off home Wi-Fi without the VPN, or the server down).
+    errorPath: 'error.html',
   },
   plugins: {
+    // MainActivity owns Back (predictive back + modal handling). The App plugin's own always-on handler would
+    // swallow Back at the root, so the app could never exit or play the system back-to-home animation.
+    App: {
+      disableBackButtonHandler: true,
+    },
     SplashScreen: {
       launchShowDuration: 0,
       launchAutoHide: true,

@@ -112,7 +112,9 @@ public class MainActivity extends BridgeActivity {
             WebSettings settings = webView.getSettings();
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
-            settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+            // No HTTP cache: anything answering at 192.168.0.2 on another network could otherwise plant a cached
+            // page or script (with its own long cache headers) that would then run inside the real dashboard at home.
+            settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
 
             // Disable stretch bounce overscroll
             webView.setOverScrollMode(View.OVER_SCROLL_NEVER);

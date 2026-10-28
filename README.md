@@ -25,7 +25,7 @@ The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-rel
 
 ### Verification
 
-- **SHA-256:** `de17538296d30d5716a2242c92c88ad1815e07396944c806777bd8148ca0a7d3`
+- **SHA-256:** `4625d411030a44c0c4470eba89fc908be6ddd557c33c0c08b78d9fac35f49236`
 - **Signing:** signed with v1, v2, and v3 schemes (valid to 2054).
 
 ---
@@ -37,7 +37,8 @@ The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-rel
 - **Edge-to-edge layout.** Automatically fits around the camera cutout and gesture navigation bar without clipping content.
 - **Predictive back.** On Android 14+ the back gesture previews closing the open sheet, dialog or search, then dismisses it before backing out of a page. On the Overview page it hands over to the system back-to-home animation.
 - **Haptics.** Light tactile feedback on tab changes, sheet dismissals and quick actions.
-- **Local network only.** Network traffic is restricted strictly to `192.168.0.2`.
+- **Home dashboard only.** It loads the dashboard at `192.168.0.2`; plain HTTP is allowed to that address only, links to other sites open in your browser, and nothing is cached between launches.
+- **Offline page.** If the dashboard can't be reached (away from home without the VPN), it shows a Try again screen instead of a browser error.
 - **Locked-down release build.** No WebView remote debugging and no `adb backup` of app data.
 
 ---
