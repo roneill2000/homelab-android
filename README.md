@@ -3,11 +3,11 @@
 A lightweight Android app for the [Homelab Command Center](https://github.com/roneill2000/homelab-dashboard). It runs the dashboard full screen with 120Hz scrolling, edge-to-edge system bar insets, and proper hardware back button support.
 
 <p align="center">
-  <img src="screenshots/overview.png" width="30%" alt="Overview screen on phone" />
-  &nbsp;
-  <img src="screenshots/more-sheet.png" width="30%" alt="More destinations bottom sheet" />
-  &nbsp;
-  <img src="screenshots/updates.png" width="30%" alt="Updates view on phone" />
+  <img src="screenshots/overview.png" width="270" alt="Overview screen on phone" />
+  &nbsp;&nbsp;
+  <img src="screenshots/more-sheet.png" width="270" alt="More destinations bottom sheet" />
+  &nbsp;&nbsp;
+  <img src="screenshots/updates.png" width="270" alt="Updates view on phone" />
 </p>
 
 ---

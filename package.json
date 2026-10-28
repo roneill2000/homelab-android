@@ -5,7 +5,8 @@
   "description": "Homelab Command Center Android wrapper",
   "scripts": {
     "sync": "cap sync",
-    "build:apk": "cd android && ./gradlew assembleRelease"
+    "build:apk": "cd android && ./gradlew assembleRelease",
+    "screenshots": "node tools/build-screenshots.mjs"
   },
   "dependencies": {
     "@capacitor/android": "7.6.9",
