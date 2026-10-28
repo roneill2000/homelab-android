@@ -1,8 +1,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center_vertical" android:padding="12dp" android:background="@drawable/widget_bg">
-    <LinearLayout android:id="@+id/widget_head" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-        <ImageView android:id="@+id/widget_icon" android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_widget_ok" android:tint="@color/widget_accent" android:contentDescription="@null"/>
-        <TextView android:id="@+id/widget_headline" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="8dp"
-            android:text="@string/widget_loading" android:textColor="@color/widget_on" android:textSize="16sp" android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+        <ImageView android:id="@+id/widget_icon" android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_widget_pc" android:contentDescription="@null"/>
+        <TextView android:id="@+id/widget_headline" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp"
+            android:text="@string/widget_loading" android:textColor="@color/widget_on" android:textSize="15sp" android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end"/>
         
     </LinearLayout>
 </LinearLayout>

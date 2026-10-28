@@ -22,4 +22,10 @@
     <string name="widget_dns_on">Protected</string>
     <string name="widget_dns_paused">Paused</string>
     <string name="widget_dns_mixed">Mixed</string>
+    <string name="widget_downloads">Downloads</string>
+    <string name="widget_problems">Problems</string>
+    <string name="widget_no_problems">None</string>
+    <string name="widget_idle">Idle</string>
+    <string name="widget_queued">queued</string>
+    <string name="widget_gpu_reader">GPU readings: install the reader on the PC</string>
 </resources>

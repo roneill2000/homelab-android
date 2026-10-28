@@ -96,36 +96,60 @@ public class HealthWidgetProvider extends AppWidgetProvider {
         boolean away = p.getBoolean("away", false);
         JSONObject d = null;
         try { if (raw != null) d = new JSONObject(raw); } catch (Exception ignored) { }
+        // Headline: the gaming PC. Then a detail line (GPU readings or the model), downloads, and problems.
         String headline;
+        String detail = "";
         boolean attention = false;
         if (d == null) {
             headline = away ? context.getString(R.string.widget_away_never) : context.getString(R.string.widget_loading);
         } else {
             headline = d.optString("headline", "—");
-            attention = "attention".equals(d.optString("status"));
-            if (away) headline = context.getString(R.string.widget_away) + " · " + headline;
+            JSONObject pc = d.optJSONObject("pc");
+            JSONObject gpu = pc != null ? pc.optJSONObject("gpu") : null;
+            StringBuilder sb = new StringBuilder();
+            if (pc != null && !pc.isNull("model")) sb.append(pc.optString("model"));
+            if (pc != null && pc.has("tok_s")) sb.append(sb.length() > 0 ? " · " : "").append(String.format("%.0f tok/s", pc.optDouble("tok_s")));
+            if (gpu != null) {
+                if (!gpu.isNull("power_w")) sb.append(sb.length() > 0 ? " · " : "").append(String.format("%.0f W", gpu.optDouble("power_w")));
+                if (!gpu.isNull("temperature_c")) sb.append(" · ").append(gpu.optInt("temperature_c")).append(" °C");
+                if (!gpu.isNull("utilization_pct")) sb.append(" · GPU ").append(gpu.optInt("utilization_pct")).append("%");
+                if (!gpu.isNull("vram_used_mib") && !gpu.isNull("vram_total_mib"))
+                    sb.append(" · ").append(String.format("%.1f/%.0f GB", gpu.optDouble("vram_used_mib") / 1024, gpu.optDouble("vram_total_mib") / 1024));
+            }
+            detail = sb.toString();
+            if (away) {
+                headline = context.getString(R.string.widget_away) + " · " + headline;
+                long okAtLocal = p.getLong("ok_at", 0);
+                if (okAtLocal > 0) detail = context.getString(R.string.widget_last_checked) + " " + DateFormat.getTimeInstance(DateFormat.SHORT).format(new Date(okAtLocal));
+            }
+            attention = d.optJSONArray("problems") != null && d.optJSONArray("problems").length() > 0;
         }
         v.setTextViewText(R.id.widget_headline, headline);
-        v.setImageViewResource(R.id.widget_icon, attention ? R.drawable.ic_widget_alert : R.drawable.ic_widget_ok);
-        int tint = context.getColor(attention ? R.color.widget_attention : R.color.widget_accent);
-        v.setInt(R.id.widget_icon, "setColorFilter", tint);
+        boolean pcOn = d != null && d.optJSONObject("pc") != null && !"off".equals(d.optJSONObject("pc").optString("state"));
+        v.setInt(R.id.widget_icon, "setColorFilter", context.getColor(attention ? R.color.widget_attention : pcOn ? R.color.widget_accent : R.color.widget_on_variant));
         if (layout != R.layout.widget_small) {
-            v.setTextViewText(R.id.value_services, d == null ? "—" : pair(d, "services_up", "services_known"));
-            v.setTextViewText(R.id.value_dns, d == null ? "—" : dns(context, d.optString("dns", "unknown")));
-            v.setTextViewText(R.id.widget_updated, okAt == 0 ? "" : (away ? context.getString(R.string.widget_last_checked) : context.getString(R.string.widget_updated))
-                + " " + DateFormat.getTimeInstance(DateFormat.SHORT).format(new Date(okAt)));
-            v.setOnClickPendingIntent(R.id.tile_services, open(context, "view/services", 1));
-            v.setOnClickPendingIntent(R.id.tile_dns, open(context, "view/network", 2));
+            v.setTextViewText(R.id.widget_detail, detail);
+            JSONObject dl = d != null ? d.optJSONObject("downloads") : null;
+            String dlText = "—";
+            if (dl != null && "active".equals(dl.optString("state"))) {
+                dlText = dl.isNull("speed") ? "" : dl.optString("speed");
+                if (!dl.isNull("queue") && dl.optInt("queue") > 0) dlText += (dlText.isEmpty() ? "" : " · ") + dl.optInt("queue") + " " + context.getString(R.string.widget_queued);
+            } else if (dl != null && "idle".equals(dl.optString("state"))) {
+                dlText = context.getString(R.string.widget_idle);
+            }
+            v.setTextViewText(R.id.value_downloads, dlText);
+            org.json.JSONArray probs = d != null ? d.optJSONArray("problems") : null;
+            StringBuilder pt = new StringBuilder();
+            if (probs != null) for (int k = 0; k < probs.length(); k++) pt.append(k > 0 ? " · " : "").append(probs.optString(k));
+            v.setTextViewText(R.id.value_problems, d == null ? "—" : pt.length() > 0 ? pt.toString() : context.getString(R.string.widget_no_problems));
+            v.setTextColor(R.id.value_problems, context.getColor(pt.length() > 0 ? R.color.widget_attention : R.color.widget_on));
+            v.setInt(R.id.icon_problems, "setColorFilter", context.getColor(pt.length() > 0 ? R.color.widget_attention : R.color.widget_on_variant));
+            v.setOnClickPendingIntent(R.id.row_downloads, open(context, "view/media", 1));
+            v.setOnClickPendingIntent(R.id.row_problems, open(context, "view/overview", 2));
             Intent refresh = new Intent(context, HealthWidgetProvider.class).setAction(ACTION_REFRESH);
             v.setOnClickPendingIntent(R.id.widget_refresh, PendingIntent.getBroadcast(context, 9, refresh, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
         }
-        if (layout == R.layout.widget_large) {
-            v.setTextViewText(R.id.value_devices, d == null ? "—" : pair(d, "devices_connected", "devices_total"));
-            v.setTextViewText(R.id.value_logs, d == null || d.isNull("log_errors_24h") ? "—" : String.valueOf(d.optLong("log_errors_24h")));
-            v.setOnClickPendingIntent(R.id.tile_devices, open(context, "view/network", 3));
-            v.setOnClickPendingIntent(R.id.tile_logs, open(context, "view/infra", 4));
-        }
-        v.setOnClickPendingIntent(R.id.widget_root, open(context, "view/overview", 0));
+        v.setOnClickPendingIntent(R.id.widget_root, open(context, "view/ai", 0));
         return v;
     }
 
