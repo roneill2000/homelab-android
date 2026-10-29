@@ -32,4 +32,6 @@
     <string name="widget_temp">Temperature</string>
     <string name="widget_load">GPU load</string>
     <string name="widget_vram">VRAM</string>
+    <string name="tile_wake">Wake PC</string>
+    <string name="tile_dns">Pause DNS</string>
 </resources>

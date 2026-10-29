@@ -49,7 +49,7 @@ public class HealthWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onDisabled(Context context) {
-        WorkManager.getInstance(context).cancelUniqueWork(WORK);
+        // The refresh keeps running without a widget: problem alerts and the Quick Settings tiles use it too.
     }
 
     @Override

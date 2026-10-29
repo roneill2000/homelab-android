@@ -1,6 +1,9 @@
 package lan.homelab.app;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import org.json.JSONObject;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.net.Uri;
@@ -90,6 +93,44 @@ public class MainActivity extends BridgeActivity {
         public String getWallpaperSeed() {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return "";
             return String.format("#%06x", 0xFFFFFF & getColor(android.R.color.system_accent1_500));
+        }
+
+        // Android 14+ Material You roles (the exact colours other apps use), light and dark. Missing roles are left out
+        // and the page generates them from the wallpaper seed. Empty on older Android.
+        @JavascriptInterface
+        public String getSystemColors() {
+            if (Build.VERSION.SDK_INT < 34) return "";
+            String[] modal = {"primary", "on_primary", "primary_container", "on_primary_container", "secondary", "on_secondary",
+                "secondary_container", "on_secondary_container", "tertiary", "on_tertiary", "tertiary_container", "on_tertiary_container",
+                "error", "on_error", "error_container", "on_error_container", "background", "on_background", "surface", "on_surface",
+                "surface_variant", "on_surface_variant", "surface_container_lowest", "surface_container_low", "surface_container",
+                "surface_container_high", "surface_container_highest", "surface_bright", "surface_dim", "outline", "outline_variant"};
+            String[] fixed = {"primary_fixed", "primary_fixed_dim", "on_primary_fixed", "on_primary_fixed_variant", "secondary_fixed",
+                "secondary_fixed_dim", "on_secondary_fixed", "on_secondary_fixed_variant", "tertiary_fixed", "tertiary_fixed_dim",
+                "on_tertiary_fixed", "on_tertiary_fixed_variant"};
+            try {
+                JSONObject out = new JSONObject();
+                for (String mode : new String[]{"light", "dark"}) {
+                    JSONObject m = new JSONObject();
+                    for (String r : modal) put(m, r, "system_" + r + "_" + mode);
+                    for (String r : fixed) put(m, r, "system_" + r);
+                    out.put(mode, m);
+                }
+                return out.toString();
+            } catch (Exception e) {
+                return "";
+            }
+        }
+
+        private void put(JSONObject m, String role, String res) throws Exception {
+            int id = getResources().getIdentifier(res, "color", "android");
+            if (id != 0) m.put(role.replace("_", "-"), String.format("#%06x", 0xFFFFFF & getColor(id)));
+        }
+
+        // The page saw a running download: keep a live progress notification going after you leave the app.
+        @JavascriptInterface
+        public void watchDownloads() {
+            DownloadProgressService.start(MainActivity.this);
         }
 
         @JavascriptInterface
@@ -248,6 +289,17 @@ public class MainActivity extends BridgeActivity {
         };
 
         getOnBackPressedDispatcher().addCallback(this, backCallback);
+
+        // Problem alerts and download progress: channels, the background refresh (alerts ride on it even without a
+        // widget), and the Android 13+ notification permission, asked once.
+        Alerts.channels(this);
+        HealthWidgetProvider.schedule(this);
+        HealthWidgetProvider.refreshNow(this);
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                && !prefs.getBoolean("asked_notifications", false)) {
+            prefs.edit().putBoolean("asked_notifications", true).apply();
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 7);
+        }
 
         // The splash stays until the page reports ready(); never longer than 3 s (server down, offline page).
         new Handler(Looper.getMainLooper()).postDelayed(this::hideSplash, 3000);

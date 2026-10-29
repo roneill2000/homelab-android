@@ -14,7 +14,7 @@ A lightweight Android app for the [Homelab Command Center](https://github.com/ro
 
 ## Download & install
 
-The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-release.apk) (3.73 MB).
+The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-release.apk) (3.74 MB).
 
 - **Direct download:** [Homelab-release.apk](https://github.com/roneill2000/homelab-android/raw/main/release/Homelab-release.apk)
 - **Install via ADB:**
@@ -25,7 +25,7 @@ The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-rel
 
 ### Verification
 
-- **SHA-256:** `30d357c1dc328320209f89c04632c0f3706413c12e637dd61df6748b873aa309`
+- **SHA-256:** `7c72e52c95834e887883cd94043b2f06dc2774f07d11d3cb0db70b17e54792a3`
 - **Signing:** signed with v1, v2, and v3 schemes (valid to 2054).
 
 ---
@@ -38,6 +38,10 @@ The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-rel
 - **Predictive back.** On Android 14+ the back gesture previews closing the open sheet, dialog or search, then dismisses it before backing out of a page. On the Overview page it hands over to the system back-to-home animation.
 - **Haptics.** Light tactile feedback on tab changes, sheet dismissals and quick actions.
 - **Home-screen widget.** Leads with the gaming PC (asleep, idle, model loaded or generating, with GPU watts, temperature, load and VRAM), then downloads and a problems line that stays at "None" when all is well. Four sizes (the largest adds big GPU tiles), refreshes every 15 minutes, keeps the last reading marked Away when you're not home. Material You colours on Android 12+.
+- **Problem alerts.** A new problem (a service down, a failed or stale cloud backup, a failed Proxmox backup job, a drive warning, DNS blocking paused) posts a notification that opens the right page; it clears itself when the problem does. Checked every 15 minutes and whenever the app opens. Routine log errors are left to the nightly review.
+- **Quick Settings tiles.** Wake PC (shows whether the PC is on), and Pause DNS for 5 minutes or resume it (asks you to unlock first on the lock screen).
+- **Download progress.** While a debrid download runs, an ongoing notification shows its stage, percentage and speed, even after you leave the app, then a "Download finished" notification.
+- **Exact Material You.** On Android 14+ the dashboard uses the system's own colour roles from your wallpaper, so it matches your other apps.
 - **Launcher shortcuts.** Long-press the icon for Network, Storage or Wake PC.
 - **Native touches.** Status and navigation bars match the light or dark theme, and the splash stays until the dashboard has drawn.
 - **Home dashboard only.** It loads the dashboard at `192.168.0.2`; plain HTTP is allowed to that address only, links to other sites open in your browser, and nothing is cached between launches.
