@@ -14,7 +14,7 @@ A lightweight Android app for the [Homelab Command Center](https://github.com/ro
 
 ## Download & install
 
-The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-release.apk) (3.71 MB).
+The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-release.apk) (3.72 MB).
 
 - **Direct download:** [Homelab-release.apk](https://github.com/roneill2000/homelab-android/raw/main/release/Homelab-release.apk)
 - **Install via ADB:**
@@ -25,7 +25,7 @@ The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-rel
 
 ### Verification
 
-- **SHA-256:** `34f17241fef80e3a1a5d9a3871aaf1f60e3477ee711fa17de81101503b24d8b9`
+- **SHA-256:** `1fa474f3ca61c7d92641bb9bc5c5a69dc471287c1279ab490ffe7c53b3a664d0`
 - **Signing:** signed with v1, v2, and v3 schemes (valid to 2054).
 
 ---
@@ -38,8 +38,8 @@ The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-rel
 - **Predictive back.** On Android 14+ the back gesture previews closing the open sheet, dialog or search, then dismisses it before backing out of a page. On the Overview page it hands over to the system back-to-home animation.
 - **Haptics.** Light tactile feedback on tab changes, sheet dismissals and quick actions.
 - **Home-screen widget.** Leads with the gaming PC (asleep, idle, model loaded or generating, with GPU watts, temperature, load and VRAM), then downloads and a problems line that stays at "None" when all is well. Four sizes (the largest adds big GPU tiles), refreshes every 15 minutes, keeps the last reading marked Away when you're not home. Material You colours on Android 12+.
-- **Problem alerts.** A new problem (a service down, a failed or stale cloud backup, a failed Proxmox backup job, a drive warning, DNS blocking paused) posts a notification that opens the right page; it clears itself when the problem does. Checked every 15 minutes and whenever the app opens. Routine log errors are left to the nightly review.
-- **Quick Settings tiles.** Wake PC (shows whether the PC is on), and Pause DNS for 5 minutes or resume it (asks you to unlock first on the lock screen).
+- **Opens from ntfy alerts.** Homelab alerts arrive through the ntfy app (instantly, even away from home). Tapping one opens this app on the matching page (`homelab://view/<page>`). The app's own 15-minute problem check is off by default since v1.6.
+- **Quick Settings tiles.** Gaming PC: lit when on, tap to wake (an awake PC is just reported as on). DNS blocking: lit when on, dim with the minutes left while paused; tap pauses for 5 minutes or resumes. Both read the live state when the panel opens, and both ask you to unlock first on the lock screen.
 - **Download progress.** While a debrid download runs, an ongoing notification shows its stage, percentage and speed, even after you leave the app, then a "Download finished" notification.
 - **Exact Material You.** On Android 14+ the dashboard uses the system's own colour roles from your wallpaper, so it matches your other apps.
 - **Launcher shortcuts.** Long-press the icon for Network, Storage or Wake PC.

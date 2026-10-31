@@ -27,6 +27,25 @@ final class Net {
         }
     }
 
+    // Like post(), but returns the response body (null unless HTTP 200), for actions that report what they did.
+    static String postForBody(String path, String json) throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URL(BASE + path).openConnection();
+        try {
+            byte[] body = json.getBytes(StandardCharsets.UTF_8);
+            conn.setConnectTimeout(4000);
+            conn.setReadTimeout(15000);
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("X-Dashboard-Action", "1");
+            conn.setFixedLengthStreamingMode(body.length);
+            try (OutputStream out = conn.getOutputStream()) { out.write(body); }
+            return conn.getResponseCode() == 200 ? read(conn.getInputStream(), 4096) : null;
+        } finally {
+            conn.disconnect();
+        }
+    }
+
     // State-changing calls carry the same header the page sends; the dashboard refuses actions without it.
     static int post(String path, String json) throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(BASE + path).openConnection();

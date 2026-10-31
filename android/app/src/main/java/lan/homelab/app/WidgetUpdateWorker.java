@@ -47,7 +47,9 @@ public class WidgetUpdateWorker extends Worker {
             JSONObject d = new JSONObject(out.toString("UTF-8"));
             if (!d.has("status")) throw new Exception("unexpected response");
             p.edit().putString("json", d.toString()).putLong("ok_at", System.currentTimeMillis()).putBoolean("away", false).apply();
-            Alerts.process(c, d);
+            // Problem alerts come from ntfy (instant, works away from home); the app's own 15-minute check is off unless
+            // the "app_alerts" preference is set (v1.6, 30 Oct 2026).
+            if (p.getBoolean("app_alerts", false)) Alerts.process(c, d);
         } catch (Exception e) {
             p.edit().putBoolean("away", true).apply();
         } finally {

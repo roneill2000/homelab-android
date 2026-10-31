@@ -265,7 +265,7 @@ public class MainActivity extends BridgeActivity {
                 if (view != null) {
                     view.evaluateJavascript(
                         "(function() {" +
-                        "  var modals = document.querySelectorAll('.m3-search-view, .m3-dialog, .m3-nav-drawer.is-modal.open, .m3-xrail.is-modal, .m3-scrim');" +
+                        "  var modals = document.querySelectorAll('.m3-search-view, .m3-dialog, .m3-nav-drawer.is-modal.open, .m3-xrail.is-modal, .m3-scrim:not(.is-leaving)');" +
                         "  var open = Array.prototype.some.call(modals, function(m) {" +
                         "    return window.getComputedStyle(m).display !== 'none' && m.getClientRects().length > 0;" +
                         "  });" +
