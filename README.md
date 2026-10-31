@@ -14,7 +14,7 @@ A lightweight Android app for the [Homelab Command Center](https://github.com/ro
 
 ## Download & install
 
-The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-release.apk) (3.74 MB).
+The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-release.apk) (3.71 MB).
 
 - **Direct download:** [Homelab-release.apk](https://github.com/roneill2000/homelab-android/raw/main/release/Homelab-release.apk)
 - **Install via ADB:**
@@ -25,7 +25,7 @@ The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-rel
 
 ### Verification
 
-- **SHA-256:** `7c72e52c95834e887883cd94043b2f06dc2774f07d11d3cb0db70b17e54792a3`
+- **SHA-256:** `34f17241fef80e3a1a5d9a3871aaf1f60e3477ee711fa17de81101503b24d8b9`
 - **Signing:** signed with v1, v2, and v3 schemes (valid to 2054).
 
 ---
@@ -58,9 +58,11 @@ Requires JDK 17+, Android SDK build-tools 35, and Node.js.
    ```sh
    npm install
    ```
-2. Copy the keystore template:
+2. Create the signing config from the template, outside the repo (the build reads
+   `/root/.config/android-signing/keystore.properties`, or the path in `HOMELAB_SIGNING`):
    ```sh
-   cp android/app/keystore.properties.example android/app/keystore.properties
+   cp android/app/keystore.properties.example /path/to/keystore.properties   # set an absolute storeFile
+   export HOMELAB_SIGNING=/path/to/keystore.properties
    ```
 3. Build release APK:
    ```sh

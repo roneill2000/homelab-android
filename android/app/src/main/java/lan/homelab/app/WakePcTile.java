@@ -15,8 +15,13 @@ public class WakePcTile extends TileService {
     @Override
     public void onStartListening() { render(null); }
 
+    // Like Pause DNS, waking the PC needs the phone unlocked: a tile works from the lock screen otherwise.
     @Override
     public void onClick() {
+        if (isLocked()) unlockAndRun(this::wake); else wake();
+    }
+
+    private void wake() {
         render("Waking…");
         new Thread(() -> {
             String msg;

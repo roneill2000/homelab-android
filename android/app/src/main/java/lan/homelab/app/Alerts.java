@@ -85,15 +85,16 @@ final class Alerts {
             String text = list.optString(i, "");
             String k = key(text);
             if (k == null || text.isEmpty()) continue;
-            now.add(k);
-            if (!before.contains(k)) notify(c, nm, k, text);
+            // Only a problem that was actually shown counts as active, so one found while notifications were off
+            // still alerts once they are allowed (Android audit, 30 Oct 2026).
+            if (before.contains(k) || notify(c, nm, k, text)) now.add(k);
         }
         for (String k : before) if (!now.contains(k)) nm.cancel(k.hashCode());
         prefs.edit().putStringSet("active", now).apply();
     }
 
-    private static void notify(Context c, NotificationManagerCompat nm, String key, String title) {
-        if (!nm.areNotificationsEnabled()) return;
+    private static boolean notify(Context c, NotificationManagerCompat nm, String key, String title) {
+        if (!nm.areNotificationsEnabled()) return false;
         Intent open = new Intent(Intent.ACTION_VIEW, Uri.parse("homelab://view/" + page(key)), c, MainActivity.class)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent tap = PendingIntent.getActivity(c, key.hashCode(), open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
@@ -106,6 +107,6 @@ final class Alerts {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(tap)
             .setAutoCancel(true);
-        try { nm.notify(key.hashCode(), b.build()); } catch (SecurityException ignored) { }
+        try { nm.notify(key.hashCode(), b.build()); return true; } catch (SecurityException ignored) { return false; }
     }
 }

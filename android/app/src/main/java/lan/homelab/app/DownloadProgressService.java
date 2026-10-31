@@ -46,7 +46,12 @@ public class DownloadProgressService extends Service {
 
     // Android 15 limits data-sync services; when the system says time is up, stop cleanly.
     @Override
-    public void onTimeout(int startId) { running = false; }
+    public void onTimeout(int startId) {
+        // Stop now, not when the poll loop next wakes (up to ~11 s), or the system treats the service as overdue.
+        running = false;
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
+        stopSelf();
+    }
 
     @Override
     public void onDestroy() { running = false; super.onDestroy(); }
