@@ -78,7 +78,9 @@ public class PauseDnsTile extends TileService {
         if (t == null) return;
         Boolean on = blocking();
         t.setLabel("DNS blocking");
-        t.setState(on == null ? Tile.STATE_UNAVAILABLE : on ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
+        // Unknown is shown dim but stays tappable (UNAVAILABLE tiles ignore taps, and the state is unknown for a moment
+        // each time the panel opens); a tap reads the live state before acting.
+        t.setState(on != null && on ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
         String sub;
         if (override != null) sub = override;
         else if (on == null) sub = "Unknown";

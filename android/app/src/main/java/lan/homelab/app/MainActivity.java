@@ -214,6 +214,10 @@ public class MainActivity extends BridgeActivity {
                 @Override
                 public void onPageStarted(WebView view) {
                     injectIconStyleFix(view);
+                    // A new page (reload, or the offline error page) hasn't asked for Back yet: give Back to Android so
+                    // it can always leave the app, and queue deep links until the page is ready again.
+                    webReady = false;
+                    if (backCallback != null) backCallback.setEnabled(false);
                 }
             });
         }
@@ -303,7 +307,8 @@ public class MainActivity extends BridgeActivity {
 
         // The splash stays until the page reports ready(); never longer than 3 s (server down, offline page).
         new Handler(Looper.getMainLooper()).postDelayed(this::hideSplash, 3000);
-        handleLink(getIntent());
+        // Only a fresh launch: an activity restored from Recents still carries the old intent (e.g. Wake PC).
+        if (savedInstanceState == null) handleLink(getIntent());
     }
 
     @Override

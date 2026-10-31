@@ -32,8 +32,10 @@ public class WakePcTile extends TileService {
             String msg;
             try {
                 String body = Net.postForBody("/api/action/wake-pc", "{}");
-                msg = body == null ? "The dashboard refused the request."
-                    : body.contains("\"already\": true") ? "The PC is already on." : "Wake signal sent. The PC takes about 30 s.";
+                org.json.JSONObject r = body == null ? null : new org.json.JSONObject(body);
+                msg = r == null ? "The dashboard refused the request."
+                    : !r.optBoolean("already") ? "Wake signal sent. The PC takes about 30 s."
+                    : r.optBoolean("cancelled_sleep") ? "The PC is on. Its sleep countdown was cancelled." : "The PC is already on.";
             } catch (Exception e) { msg = "Can't reach your homelab."; }
             String m = msg;
             new Handler(Looper.getMainLooper()).post(() -> { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); render(null); });

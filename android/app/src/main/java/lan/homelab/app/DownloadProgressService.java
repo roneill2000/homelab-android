@@ -35,11 +35,14 @@ public class DownloadProgressService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (running) return START_NOT_STICKY;
-        running = true;
+        // Every start must call startForeground, even when the loop is already running: a start that arrived as the
+        // last download finished used to skip it, and Android then kills the app (audit, 30 Oct 2026).
         Notification first = build("Checking downloads…", null, -1, true);
         int type = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC : 0;
-        ServiceCompat.startForeground(this, ID, first, type);
+        try { ServiceCompat.startForeground(this, ID, first, type); }
+        catch (Exception e) { stopSelf(); return START_NOT_STICKY; }  // Android 15 time limit used up, or not allowed now
+        if (running) return START_NOT_STICKY;
+        running = true;
         new Thread(this::loop, "download-progress").start();
         return START_NOT_STICKY;
     }
@@ -108,6 +111,7 @@ public class DownloadProgressService extends Service {
     }
 
     private void finish(boolean completed) {
+        running = false;
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
         if (completed && !seen.isEmpty()) {
             String first = seen.iterator().next();
