@@ -14,7 +14,7 @@ A lightweight Android app for the [Homelab Command Center](https://github.com/ro
 
 ## Download & install
 
-The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-release.apk) (3.71 MB).
+The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-release.apk) (3.72 MB).
 
 - **Direct download:** [Homelab-release.apk](https://github.com/roneill2000/homelab-android/raw/main/release/Homelab-release.apk)
 - **Install via ADB:**
@@ -25,7 +25,7 @@ The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-rel
 
 ### Verification
 
-- **SHA-256:** `15c7614e6d9a715c9334f7d70724b4fd9aa74dd0459dcd3832ad185da26bb347`
+- **SHA-256:** `fb01cc32a549a61dd2b67037d3fa7d6e8212c55b3f99c5d9242a149296544269`
 - **Signing:** signed with v1, v2, and v3 schemes (valid to 2054).
 
 ---
@@ -36,13 +36,14 @@ The signed release APK is in [`release/Homelab-release.apk`](release/Homelab-rel
 - **Edge-to-edge layout.** Automatically fits around the camera cutout and gesture navigation bar without clipping content.
 - **Predictive back.** On Android 14+ the back gesture previews closing the open sheet, dialog or search, then dismisses it before backing out of a page. On the Overview page it hands over to the system back-to-home animation.
 - **Haptics.** Light tactile feedback on tab changes, sheet dismissals and quick actions.
-- **Home-screen widget.** Leads with the gaming PC (asleep, idle, model loaded or generating, with GPU watts, temperature, load and VRAM), then downloads and a problems line that stays at "None" when all is well. Four sizes (the largest adds big GPU tiles), refreshes every 15 minutes, keeps the last reading marked Away when you're not home. Material You colours on Android 12+.
+- **Home-screen widget.** Leads with the gaming PC (asleep, idle, model loaded or generating, with the model's friendly name, GPU watts, temperature, load and VRAM), then downloads and a problems line that stays at "None" when all is well. Four sizes (the largest adds big GPU tiles), refreshes every 15 minutes, keeps the last reading marked Away when you're not home. Material You colours on Android 12+.
 - **Opens from ntfy alerts.** Homelab alerts arrive through the ntfy app (instantly, even away from home). Tapping one opens this app on the matching page (`homelab://view/<page>`). The app's own 15-minute problem check is off by default since v1.6.
-- **Quick Settings tiles.** Gaming PC: lit when on, tap to wake (an awake PC is just reported as on). DNS blocking: lit when on, dim with the minutes left while paused; tap pauses for 5 minutes or resumes. Snooze alerts (v1.8): lit while snoozed with the time left; tap snoozes every homelab alert for 2 hours or ends the snooze. All read the live state when the panel opens, and all ask you to unlock first on the lock screen.
+- **Quick Settings tiles.** Gaming PC: lit when on, tap to wake (an awake PC is just reported as on). DNS blocking: lit when on, dim with the minutes left while paused; tap pauses for 5 minutes or resumes. Snooze alerts (v1.8): lit while snoozed with the time left; tap snoozes every homelab alert for 2 hours or ends the snooze. AI engine (v1.9): shows Strata, the loaded llama.cpp model, Nothing loaded or PC asleep; tap loads Strata or unloads it to free the GPU for the 27B (refused while a game runs). All read the live state when the panel opens, and all ask you to unlock first on the lock screen.
 - **Download progress.** While a debrid download runs, an ongoing notification shows its stage, percentage and speed, even after you leave the app, then a "Download finished" notification.
 - **Exact Material You.** On Android 14+ the dashboard uses the system's own colour roles from your wallpaper, so it matches your other apps.
-- **Launcher shortcuts.** Long-press the icon for Network, Storage or Wake PC.
-- **Share to Ask AI (v1.8).** Share text from any app and pick Homelab ("Ask AI"): the Local AI page opens with it in the Ask box. You choose the model and send; nothing is sent by itself.
+- **Launcher shortcuts.** Long-press the icon for Network, Storage, Wake PC or Ask AI.
+- **Share to Ask AI (v1.8).** Share text from any app and pick Homelab ("Ask AI"): the Local AI page opens with it in the Ask box. You choose the model and send; nothing is sent by itself. Since v1.9 also from the text selection menu (select text, "Ask AI") and a launcher shortcut (long-press the icon, "Ask AI": an empty Ask box).
+- **Answer ready (v1.9).** After you ask a question, leave the app: a notification with the model and the start of the answer appears when it's done, and opens the Local AI page. Nothing is posted while the app is on screen.
 - **Native touches.** Status and navigation bars match the light or dark theme (also on Android 15+, which ignores window bar colours), and the splash stays until the dashboard has drawn (3 s at most, also on the offline page).
 - **Home dashboard only.** It loads the dashboard at `192.168.0.2`; plain HTTP is allowed to that address only, links to other sites open in your browser, and nothing is cached between launches.
 - **Offline page.** If the dashboard can't be reached, it says whether your VPN is on, offers to open WireGuard (or AmneziaWG, else Android's VPN settings) and retries by itself every 5 s and whenever the network changes, opening the dashboard as soon as it answers. Tiles say "Away from home? Turn on WireGuard" instead of a bare error.

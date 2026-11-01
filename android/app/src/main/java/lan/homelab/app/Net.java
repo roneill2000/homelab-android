@@ -33,7 +33,7 @@ final class Net {
     // State-changing calls carry the same header the page sends; the dashboard refuses actions without it.
     static int post(String path, String json) throws Exception { return send(path, json, false).code; }
 
-    // Like post(), but returns the response body (null unless HTTP 200), for actions that report what they did.
+    // Like post(), but returns the response body (null unless HTTP 2xx), for actions that report what they did.
     static String postForBody(String path, String json) throws Exception { return send(path, json, true).body; }
 
     private static final class Reply {
@@ -54,7 +54,8 @@ final class Net {
             conn.setFixedLengthStreamingMode(body.length);
             try (OutputStream out = conn.getOutputStream()) { out.write(body); }
             int code = conn.getResponseCode();
-            return new Reply(code, wantBody && code == 200 ? read(conn.getInputStream(), 4096) : null);
+            boolean ok2xx = code >= 200 && code < 300;
+            return new Reply(code, wantBody && ok2xx ? read(conn.getInputStream(), 4096) : null);
         } finally {
             conn.disconnect();
         }

@@ -16,4 +16,9 @@
         <intent android:action="android.intent.action.VIEW" android:data="homelab://action/wake-pc"
             android:targetPackage="lan.homelab.app" android:targetClass="lan.homelab.app.MainActivity"/>
     </shortcut>
+    <shortcut android:shortcutId="ask" android:enabled="true" android:icon="@drawable/ic_shortcut_ask"
+        android:shortcutShortLabel="@string/share_label" android:shortcutLongLabel="@string/shortcut_ask_long">
+        <intent android:action="android.intent.action.VIEW" android:data="homelab://action/ask"
+            android:targetPackage="lan.homelab.app" android:targetClass="lan.homelab.app.MainActivity"/>
+    </shortcut>
 </shortcuts>

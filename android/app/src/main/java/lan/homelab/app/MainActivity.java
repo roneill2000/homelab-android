@@ -41,6 +41,8 @@ import com.getcapacitor.WebViewListener;
 public class MainActivity extends BridgeActivity {
 
     private OnBackPressedCallback backCallback;
+    // On screen right now: "Answer ready" notifications are only posted while you're in another app.
+    static volatile boolean visible = false;
     private static final Pattern HEX = Pattern.compile("^#[0-9a-fA-F]{6}$");
     private static final Set<String> PAGES = new HashSet<>(Arrays.asList(
         "overview", "services", "ai", "media", "network", "fleet", "storage", "infra", "updates"));
@@ -152,6 +154,12 @@ public class MainActivity extends BridgeActivity {
                     backCallback.setEnabled(enabled);
                 }
             });
+        }
+
+        // The Ask box sent a question (v1.9): follow it and notify when the answer is ready if you've left the app.
+        @JavascriptInterface
+        public void watchAnswer(String id) {
+            Answers.watch(MainActivity.this, id);
         }
 
         // The offline page has shown: retry in the background until the dashboard answers.
@@ -321,6 +329,18 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        visible = true;
+    }
+
+    @Override
+    public void onPause() {
+        visible = false;
+        super.onPause();
+    }
+
+    @Override
     public void onStop() {
         super.onStop();
         // No retrying while the app is in the background; onStart resumes it if the offline page still shows.
@@ -345,9 +365,12 @@ public class MainActivity extends BridgeActivity {
     // constants reach JavaScript; anything else is ignored. Text shared from another app (Android share sheet) opens
     // the Ask box with it filled in; it is passed as a JSON string literal, never as code.
     private void handleLink(Intent intent) {
-        if (intent != null && Intent.ACTION_SEND.equals(intent.getAction()) && "text/plain".equals(intent.getType())) {
-            CharSequence shared = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
-            if (shared == null) shared = intent.getCharSequenceExtra(Intent.EXTRA_SUBJECT);
+        boolean send = intent != null && Intent.ACTION_SEND.equals(intent.getAction()) && "text/plain".equals(intent.getType());
+        // Text selection menu "Ask AI" (v1.9): the same as sharing the selected text.
+        boolean select = intent != null && Intent.ACTION_PROCESS_TEXT.equals(intent.getAction());
+        if (send || select) {
+            CharSequence shared = select ? intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT) : intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
+            if (shared == null && send) shared = intent.getCharSequenceExtra(Intent.EXTRA_SUBJECT);
             String text = shared == null ? "" : shared.toString().trim();
             if (text.isEmpty()) return;
             if (text.length() > 3000) text = text.substring(0, 3000);
@@ -363,6 +386,8 @@ public class MainActivity extends BridgeActivity {
             js = "window.__homelabOpen&&window.__homelabOpen('" + arg + "')";
         } else if ("action".equals(kind) && "wake-pc".equals(arg)) {
             js = "window.__homelabShortcut&&window.__homelabShortcut('wake-pc')";
+        } else if ("action".equals(kind) && "ask".equals(arg)) {
+            js = "window.__homelabAsk&&window.__homelabAsk('')";  // launcher shortcut: an empty Ask box, keyboard up
         }
         if (js == null) return;
         if (webReady) runJs(js); else pendingJs = js;

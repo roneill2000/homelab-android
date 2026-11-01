@@ -28,4 +28,6 @@
     <string name="tile_dns">DNS blocking</string>
     <string name="tile_snooze">Snooze alerts</string>
     <string name="share_label">Ask AI</string>
+    <string name="shortcut_ask_long">Ask the AI a question</string>
+    <string name="tile_ai">AI engine</string>
 </resources>

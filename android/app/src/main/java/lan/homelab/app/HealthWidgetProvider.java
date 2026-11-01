@@ -108,7 +108,7 @@ public class HealthWidgetProvider extends AppWidgetProvider {
             JSONObject pc = d.optJSONObject("pc");
             JSONObject gpu = pc != null ? pc.optJSONObject("gpu") : null;
             StringBuilder sb = new StringBuilder();
-            if (pc != null && !pc.isNull("model")) sb.append(pc.optString("model"));
+            if (pc != null && !pc.isNull("model")) sb.append(ModelNames.label(pc.optString("model")));
             if (pc != null && pc.has("tok_s")) sb.append(sb.length() > 0 ? " · " : "").append(String.format("%.0f tok/s", pc.optDouble("tok_s")));
             if (gpu != null) {
                 if (!gpu.isNull("power_w")) sb.append(sb.length() > 0 ? " · " : "").append(String.format("%.0f W", gpu.optDouble("power_w")));
@@ -161,7 +161,7 @@ public class HealthWidgetProvider extends AppWidgetProvider {
             // The tiles say it; the detail line keeps only the model / tok/s.
             if (pc != null) {
                 StringBuilder m = new StringBuilder();
-                if (!pc.isNull("model")) m.append(pc.optString("model"));
+                if (!pc.isNull("model")) m.append(ModelNames.label(pc.optString("model")));
                 if (pc.has("tok_s")) m.append(m.length() > 0 ? " · " : "").append(String.format("%.0f tok/s", pc.optDouble("tok_s")));
                 v.setTextViewText(R.id.widget_detail, away ? detail : m.toString());
             }

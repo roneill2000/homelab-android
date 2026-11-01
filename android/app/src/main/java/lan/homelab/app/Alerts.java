@@ -37,6 +37,9 @@ final class Alerts {
         nm.createNotificationChannel(alerts);
         nm.createNotificationChannel(progress);
         nm.createNotificationChannel(done);
+        NotificationChannel answers = new NotificationChannel(Answers.CHANNEL, "AI answers", NotificationManager.IMPORTANCE_DEFAULT);
+        answers.setDescription("A question you asked is answered while you're in another app");
+        nm.createNotificationChannel(answers);
     }
 
     // Stable identity for a problem whose wording carries a count ("2 services down" and "3 services down" are one alert).

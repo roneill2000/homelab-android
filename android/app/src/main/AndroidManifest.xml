@@ -36,6 +36,12 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
+            <!-- Select text in any app: "Ask AI" in the selection menu (v1.9). -->
+            <intent-filter android:label="@string/share_label">
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
 
@@ -60,6 +66,11 @@
 
         <service android:name=".SnoozeAlertsTile" android:exported="true" android:label="@string/tile_snooze"
             android:icon="@drawable/ic_tile_snooze" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
+        </service>
+
+        <service android:name=".AiEngineTile" android:exported="true" android:label="@string/tile_ai"
+            android:icon="@drawable/ic_tile_ai" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
         </service>
 
