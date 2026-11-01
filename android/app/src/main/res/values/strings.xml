@@ -15,23 +15,17 @@
     <string name="widget_updated">Updated</string>
     <string name="widget_last_checked">Last reading</string>
     <string name="widget_refresh">Refresh</string>
-    <string name="widget_services">Services</string>
-    <string name="widget_devices">Devices</string>
-    <string name="widget_dns">DNS</string>
-    <string name="widget_logs">Log errors</string>
-    <string name="widget_dns_on">Protected</string>
-    <string name="widget_dns_paused">Paused</string>
-    <string name="widget_dns_mixed">Mixed</string>
     <string name="widget_downloads">Downloads</string>
     <string name="widget_problems">Problems</string>
     <string name="widget_no_problems">None</string>
     <string name="widget_idle">Idle</string>
     <string name="widget_queued">queued</string>
-    <string name="widget_gpu_reader">GPU readings: install the reader on the PC</string>
     <string name="widget_power">Power</string>
     <string name="widget_temp">Temperature</string>
     <string name="widget_load">GPU load</string>
     <string name="widget_vram">VRAM</string>
     <string name="tile_wake">Gaming PC</string>
     <string name="tile_dns">DNS blocking</string>
+    <string name="tile_snooze">Snooze alerts</string>
+    <string name="share_label">Ask AI</string>
 </resources>

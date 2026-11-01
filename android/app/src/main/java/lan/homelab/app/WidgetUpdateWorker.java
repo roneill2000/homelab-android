@@ -7,17 +7,11 @@ import androidx.work.Constraints;
 import androidx.work.NetworkType;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import org.json.JSONObject;
 
-// Fetches http://192.168.0.2/api/widget (cleartext is allowed for that address only) with short timeouts. A failure
+// Fetches /api/widget through LiveState (Net: the one cleartext address, short timeouts). A failure
 // (away from home, server down) keeps the last good values and marks the widget "Away"; it never writes zeros.
 public class WidgetUpdateWorker extends Worker {
-    static final String URL_WIDGET = "http://192.168.0.2/api/widget";
-
     public WidgetUpdateWorker(@NonNull Context context, @NonNull WorkerParameters params) { super(context, params); }
 
     static Constraints constraints() {
@@ -28,33 +22,12 @@ public class WidgetUpdateWorker extends Worker {
     @Override
     public Result doWork() {
         Context c = getApplicationContext();
-        SharedPreferences p = c.getSharedPreferences("homelab_widget", Context.MODE_PRIVATE);
-        HttpURLConnection conn = null;
-        try {
-            conn = (HttpURLConnection) new URL(URL_WIDGET).openConnection();
-            conn.setConnectTimeout(4000);
-            conn.setReadTimeout(4000);
-            conn.setUseCaches(false);
-            if (conn.getResponseCode() != 200) throw new Exception("HTTP " + conn.getResponseCode());
-            InputStream in = conn.getInputStream();
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            byte[] buf = new byte[4096];
-            int n;
-            while ((n = in.read(buf)) != -1) {
-                out.write(buf, 0, n);
-                if (out.size() > 16384) throw new Exception("response too large");
-            }
-            JSONObject d = new JSONObject(out.toString("UTF-8"));
-            if (!d.has("status")) throw new Exception("unexpected response");
-            p.edit().putString("json", d.toString()).putLong("ok_at", System.currentTimeMillis()).putBoolean("away", false).apply();
-            // Problem alerts come from ntfy (instant, works away from home); the app's own 15-minute check is off unless
-            // the "app_alerts" preference is set (v1.6, 30 Oct 2026).
-            if (p.getBoolean("app_alerts", false)) Alerts.process(c, d);
-        } catch (Exception e) {
-            p.edit().putBoolean("away", true).apply();
-        } finally {
-            if (conn != null) conn.disconnect();
-        }
+        SharedPreferences p = LiveState.prefs(c);
+        JSONObject d = LiveState.fetch(c);  // caches it and clears "away" on success
+        if (d == null) p.edit().putBoolean("away", true).apply();
+        // Problem alerts come from ntfy (instant, works away from home); the app's own 15-minute check is off unless
+        // the "app_alerts" preference is set (v1.6, 30 Oct 2026).
+        else if (p.getBoolean("app_alerts", false)) Alerts.process(c, d);
         HealthWidgetProvider.render(c);
         return Result.success();
     }

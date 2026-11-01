@@ -29,7 +29,7 @@ public class PauseDnsTile extends TileService {
     private void toggle() {
         render("Checking…");
         new Thread(() -> {
-            if (LiveState.fetch(this) == null) { toast("Can't reach your homelab."); post(null); return; }
+            if (LiveState.fetch(this) == null) { toast(Net.unreachable(this)); post(null); return; }
             Boolean blocking = blocking();
             if (blocking == null) { toast("DNS status is unknown right now."); post(null); return; }
             boolean pause = blocking;
@@ -42,7 +42,7 @@ public class PauseDnsTile extends TileService {
                         .putLong("dns_set_at", System.currentTimeMillis()).apply();
                     msg = pause ? "DNS blocking paused for 5 minutes." : "DNS blocking is back on.";
                 } else msg = "The dashboard refused the request.";
-            } catch (Exception e) { msg = "Can't reach your homelab."; }
+            } catch (Exception e) { msg = Net.unreachable(this); }
             toast(msg);
             post(null);
             HealthWidgetProvider.refreshNow(this);

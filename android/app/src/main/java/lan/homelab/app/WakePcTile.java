@@ -36,7 +36,7 @@ public class WakePcTile extends TileService {
                 msg = r == null ? "The dashboard refused the request."
                     : !r.optBoolean("already") ? "Wake signal sent. The PC takes about 30 s."
                     : r.optBoolean("cancelled_sleep") ? "The PC is on. Its sleep countdown was cancelled." : "The PC is already on.";
-            } catch (Exception e) { msg = "Can't reach your homelab."; }
+            } catch (Exception e) { msg = Net.unreachable(this); }
             String m = msg;
             new Handler(Looper.getMainLooper()).post(() -> { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); render(null); });
             HealthWidgetProvider.refreshNow(this);

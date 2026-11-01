@@ -1,5 +1,8 @@
 package lan.homelab.app;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,8 +30,18 @@ final class Net {
         }
     }
 
+    // State-changing calls carry the same header the page sends; the dashboard refuses actions without it.
+    static int post(String path, String json) throws Exception { return send(path, json, false).code; }
+
     // Like post(), but returns the response body (null unless HTTP 200), for actions that report what they did.
-    static String postForBody(String path, String json) throws Exception {
+    static String postForBody(String path, String json) throws Exception { return send(path, json, true).body; }
+
+    private static final class Reply {
+        final int code; final String body;
+        Reply(int code, String body) { this.code = code; this.body = body; }
+    }
+
+    private static Reply send(String path, String json, boolean wantBody) throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(BASE + path).openConnection();
         try {
             byte[] body = json.getBytes(StandardCharsets.UTF_8);
@@ -40,29 +53,22 @@ final class Net {
             conn.setRequestProperty("X-Dashboard-Action", "1");
             conn.setFixedLengthStreamingMode(body.length);
             try (OutputStream out = conn.getOutputStream()) { out.write(body); }
-            return conn.getResponseCode() == 200 ? read(conn.getInputStream(), 4096) : null;
+            int code = conn.getResponseCode();
+            return new Reply(code, wantBody && code == 200 ? read(conn.getInputStream(), 4096) : null);
         } finally {
             conn.disconnect();
         }
     }
 
-    // State-changing calls carry the same header the page sends; the dashboard refuses actions without it.
-    static int post(String path, String json) throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) new URL(BASE + path).openConnection();
+    // What a tile says when the dashboard doesn't answer: off the VPN, the likely fix; on it, the dashboard itself.
+    static String unreachable(Context c) {
+        boolean vpn = false;
         try {
-            byte[] body = json.getBytes(StandardCharsets.UTF_8);
-            conn.setConnectTimeout(4000);
-            conn.setReadTimeout(15000);
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("X-Dashboard-Action", "1");
-            conn.setFixedLengthStreamingMode(body.length);
-            try (OutputStream out = conn.getOutputStream()) { out.write(body); }
-            return conn.getResponseCode();
-        } finally {
-            conn.disconnect();
-        }
+            ConnectivityManager cm = c.getSystemService(ConnectivityManager.class);
+            NetworkCapabilities nc = cm == null ? null : cm.getNetworkCapabilities(cm.getActiveNetwork());
+            vpn = nc != null && nc.hasTransport(NetworkCapabilities.TRANSPORT_VPN);
+        } catch (Exception ignored) { }
+        return vpn ? "VPN is on, but your homelab isn't answering." : "Can't reach your homelab. Away from home? Turn on WireGuard.";
     }
 
     private static String read(InputStream in, int maxBytes) throws Exception {

@@ -18,18 +18,14 @@ const config: CapacitorConfig = {
       disableBackButtonHandler: true,
     },
     SplashScreen: {
-      // Hidden by the page once it has painted (AndroidBridge.ready), or by MainActivity after 3 s.
+      // Hidden by the page once it has painted (AndroidBridge.ready); the plugin itself hides it after 3 s at the latest
+      // (v1.8: the old JS-only fallback never fired on the offline page, which has no Capacitor JS, so the splash hung).
       launchShowDuration: 3000,
-      launchAutoHide: false,
+      launchAutoHide: true,
       backgroundColor: '#091613',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
-    },
-    StatusBar: {
-      overlaysWebView: false,
-      style: 'DARK',
-      backgroundColor: '#091613',
     },
   },
 };

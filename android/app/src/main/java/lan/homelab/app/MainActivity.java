@@ -5,6 +5,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import org.json.JSONObject;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.provider.Settings;
 import android.content.pm.ApplicationInfo;
 import android.net.Uri;
 import android.os.Handler;
@@ -19,7 +23,6 @@ import android.os.Bundle;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.Window;
-import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -43,6 +46,14 @@ public class MainActivity extends BridgeActivity {
         "overview", "services", "ai", "media", "network", "fleet", "storage", "infra", "updates"));
     private volatile boolean webReady = false;
     private String pendingJs = null;
+    // Offline page: while it shows, a background check retries the dashboard every few seconds and at once when the
+    // network changes (Wi-Fi joined, WireGuard on), then loads it. The page itself can't fetch the dashboard.
+    private volatile boolean offline = false;
+    private final Object probeLock = new Object();
+    private Thread prober;
+    private ConnectivityManager.NetworkCallback netCallback;
+    // VPN apps tried in order by "Open VPN": WireGuard, then AmneziaWG (the VM also serves AmneziaWG on :443).
+    private static final String[] VPN_APPS = {"com.wireguard.android", "org.amnezia.awg"};
 
     public class NativeBridge {
         @JavascriptInterface
@@ -65,7 +76,8 @@ public class MainActivity extends BridgeActivity {
         public void snap() {
             runOnUiThread(() -> {
                 View v = getBridge() != null ? getBridge().getWebView() : null;
-                if (v != null) v.performHapticFeedback(HapticFeedbackConstants.CONFIRM);
+                // CONFIRM exists from Android 11; older phones get the closest older effect instead of nothing.
+                if (v != null) v.performHapticFeedback(Build.VERSION.SDK_INT >= 30 ? HapticFeedbackConstants.CONFIRM : HapticFeedbackConstants.VIRTUAL_KEY);
             });
         }
 
@@ -141,6 +153,41 @@ public class MainActivity extends BridgeActivity {
                 }
             });
         }
+
+        // The offline page has shown: retry in the background until the dashboard answers.
+        @JavascriptInterface
+        public void offlineShown() {
+            offline = true;
+            startProbing();
+        }
+
+        // "Try again" on the offline page: check right now instead of waiting for the next round.
+        @JavascriptInterface
+        public void retryNow() {
+            offline = true;
+            startProbing();
+            synchronized (probeLock) { probeLock.notifyAll(); }
+        }
+
+        // "vpn" when a VPN carries this phone's traffic, else "none" (the offline page words its advice by this).
+        @JavascriptInterface
+        public String vpnState() {
+            return vpnActive() ? "vpn" : "none";
+        }
+
+        // Opens WireGuard (or AmneziaWG); without either, Android's VPN settings. Returns what was opened.
+        @JavascriptInterface
+        public String openVpn() {
+            for (String pkg : VPN_APPS) {
+                Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
+                if (i != null) {
+                    startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    return pkg.contains("amnezia") ? "AmneziaWG" : "WireGuard";
+                }
+            }
+            try { startActivity(new Intent(Settings.ACTION_VPN_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); return "settings"; }
+            catch (Exception e) { return ""; }
+        }
     }
 
     @Override
@@ -171,13 +218,6 @@ public class MainActivity extends BridgeActivity {
         SharedPreferences prefs = getSharedPreferences("homelab", MODE_PRIVATE);
         applySystemBars(prefs.getString("status", "#091613"), prefs.getString("nav", "#091613"), prefs.getBoolean("light", false));
 
-        // 2. Request 120Hz display refresh rate directly without altering screen resolution
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            WindowManager.LayoutParams params = window.getAttributes();
-            params.preferredRefreshRate = 120.0f;
-            window.setAttributes(params);
-        }
-
         // 3. Native performance configuration & Haptics bridge
         WebView webView = getBridge() != null ? getBridge().getWebView() : null;
         if (webView != null) {
@@ -207,13 +247,7 @@ public class MainActivity extends BridgeActivity {
         if (bridge != null) {
             bridge.addWebViewListener(new WebViewListener() {
                 @Override
-                public void onPageLoaded(WebView view) {
-                    injectIconStyleFix(view);
-                }
-
-                @Override
                 public void onPageStarted(WebView view) {
-                    injectIconStyleFix(view);
                     // A new page (reload, or the offline error page) hasn't asked for Back yet: give Back to Android so
                     // it can always leave the app, and queue deep links until the page is ready again.
                     webReady = false;
@@ -229,70 +263,39 @@ public class MainActivity extends BridgeActivity {
         // When an overlay or sub-page is active, it is enabled to preview modal collapse and navigate back.
         backCallback = new OnBackPressedCallback(false) {
             @Override
-            public void handleOnBackStarted(@NonNull BackEventCompat backEvent) {
-                WebView view = getBridge() != null ? getBridge().getWebView() : null;
-                if (view != null) {
-                    view.evaluateJavascript(
-                        "window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'start', progress: " +
-                        backEvent.getProgress() + ", edge: " + backEvent.getSwipeEdge() + " } }));",
-                        null
-                    );
-                }
+            public void handleOnBackStarted(@NonNull BackEventCompat e) {
+                backEvent("{phase:'start',progress:" + e.getProgress() + ",edge:" + e.getSwipeEdge() + "}");
             }
 
             @Override
-            public void handleOnBackProgressed(@NonNull BackEventCompat backEvent) {
-                WebView view = getBridge() != null ? getBridge().getWebView() : null;
-                if (view != null) {
-                    view.evaluateJavascript(
-                        "window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'progress', progress: " +
-                        backEvent.getProgress() + ", edge: " + backEvent.getSwipeEdge() + " } }));",
-                        null
-                    );
-                }
+            public void handleOnBackProgressed(@NonNull BackEventCompat e) {
+                backEvent("{phase:'progress',progress:" + e.getProgress() + ",edge:" + e.getSwipeEdge() + "}");
             }
 
             @Override
             public void handleOnBackCancelled() {
-                WebView view = getBridge() != null ? getBridge().getWebView() : null;
-                if (view != null) {
-                    view.evaluateJavascript(
-                        "window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'cancel' } }));",
-                        null
-                    );
-                }
+                backEvent("{phase:'cancel'}");
             }
 
+            // The page owns the decision (close the open overlay, go back a page, or to Overview): window.__homelabBack.
             @Override
             public void handleOnBackPressed() {
-                WebView view = getBridge() != null ? getBridge().getWebView() : null;
-                if (view != null) {
-                    view.evaluateJavascript(
-                        "(function() {" +
-                        "  var modals = document.querySelectorAll('.m3-search-view, .m3-dialog, .m3-nav-drawer.is-modal.open, .m3-xrail.is-modal, .m3-scrim:not(.is-leaving)');" +
-                        "  var open = Array.prototype.some.call(modals, function(m) {" +
-                        "    return window.getComputedStyle(m).display !== 'none' && m.getClientRects().length > 0;" +
-                        "  });" +
-                        "  var hasOverlay = (typeof window.__hasOpenOverlay === 'function' && window.__hasOpenOverlay()) || open;" +
-                        "  window.dispatchEvent(new CustomEvent('predictiveback', { detail: { phase: 'commit' } }));" +
-                        "  if (hasOverlay) {" +
-                        "    return;" +
-                        "  }" +
-                        "  if (window.history.length > 1 && window.location.hash !== '' && window.location.hash !== '#/' && window.location.hash !== '#/overview') {" +
-                        "    window.history.back();" +
-                        "    return;" +
-                        "  }" +
-                        "  if (window.__navigateOverview) {" +
-                        "    window.__navigateOverview();" +
-                        "  }" +
-                        "})()",
-                        null
-                    );
-                }
+                runJs("window.__homelabBack?window.__homelabBack():" + backEventJs("{phase:'commit'}"));
             }
         };
 
         getOnBackPressedDispatcher().addCallback(this, backCallback);
+
+        // Network changes (Wi-Fi joined, WireGuard switched on or off) retry the offline page at once and refresh its advice.
+        ConnectivityManager cm = getSystemService(ConnectivityManager.class);
+        if (cm != null) {
+            netCallback = new ConnectivityManager.NetworkCallback() {
+                @Override public void onAvailable(@NonNull Network n) { networkChanged(); }
+                @Override public void onLost(@NonNull Network n) { networkChanged(); }
+                @Override public void onCapabilitiesChanged(@NonNull Network n, @NonNull NetworkCapabilities c) { networkChanged(); }
+            };
+            try { cm.registerDefaultNetworkCallback(netCallback); } catch (Exception ignored) { netCallback = null; }
+        }
 
         // Problem alerts and download progress: channels, the background refresh (alerts ride on it even without a
         // widget), and the Android 13+ notification permission, asked once.
@@ -317,9 +320,41 @@ public class MainActivity extends BridgeActivity {
         handleLink(intent);
     }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        // No retrying while the app is in the background; onStart resumes it if the offline page still shows.
+        stopProbing();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (offline) startProbing();
+    }
+
+    @Override
+    public void onDestroy() {
+        stopProbing();
+        ConnectivityManager cm = getSystemService(ConnectivityManager.class);
+        if (cm != null && netCallback != null) { try { cm.unregisterNetworkCallback(netCallback); } catch (Exception ignored) { } }
+        super.onDestroy();
+    }
+
     // Launcher shortcuts and the widget send homelab://view/<page> or homelab://action/wake-pc. Only allowlisted
-    // constants reach JavaScript; anything else is ignored.
+    // constants reach JavaScript; anything else is ignored. Text shared from another app (Android share sheet) opens
+    // the Ask box with it filled in; it is passed as a JSON string literal, never as code.
     private void handleLink(Intent intent) {
+        if (intent != null && Intent.ACTION_SEND.equals(intent.getAction()) && "text/plain".equals(intent.getType())) {
+            CharSequence shared = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
+            if (shared == null) shared = intent.getCharSequenceExtra(Intent.EXTRA_SUBJECT);
+            String text = shared == null ? "" : shared.toString().trim();
+            if (text.isEmpty()) return;
+            if (text.length() > 3000) text = text.substring(0, 3000);
+            String js = "window.__homelabAsk&&window.__homelabAsk(" + JSONObject.quote(text) + ")";
+            if (webReady) runJs(js); else pendingJs = js;
+            return;
+        }
         Uri uri = intent != null ? intent.getData() : null;
         if (uri == null || !"homelab".equals(uri.getScheme())) return;
         String kind = uri.getHost(), arg = uri.getLastPathSegment();
@@ -340,10 +375,23 @@ public class MainActivity extends BridgeActivity {
 
     private void hideSplash() {
         runJs("window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.SplashScreen&&Capacitor.Plugins.SplashScreen.hide({fadeOutDuration:200})");
+        // Removing the splash resets the status bar icons to the theme's (light icons), undoing what the page asked for
+        // (seen on Android 15: white icons on the light theme's light bar). Re-apply the page's choice once it is gone.
+        new Handler(Looper.getMainLooper()).postDelayed(this::reapplySystemBars, 450);
     }
 
+    private void reapplySystemBars() {
+        SharedPreferences prefs = getSharedPreferences("homelab", MODE_PRIVATE);
+        applySystemBars(prefs.getString("status", "#091613"), prefs.getString("nav", "#091613"), prefs.getBoolean("light", false));
+    }
+
+    // Android 15+ draws apps edge to edge and ignores the window's bar colours, so the strip behind the status bar is the
+    // content view's top padding: paint that too, or light theme gets dark icons on the dark launch colour.
+    @SuppressWarnings("deprecation")
     private void applySystemBars(String statusHex, String navHex, boolean lightIcons) {
         Window w = getWindow();
+        View content = findViewById(android.R.id.content);
+        if (content != null) content.setBackgroundColor(Color.parseColor(statusHex));
         w.setStatusBarColor(Color.parseColor(statusHex));
         w.setNavigationBarColor(Color.parseColor(navHex));
         WindowInsetsControllerCompat c = WindowCompat.getInsetsController(w, w.getDecorView());
@@ -353,21 +401,54 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    private void injectIconStyleFix(WebView webView) {
-        if (webView == null) return;
-        String css = ".material-symbols-rounded { overflow: visible !important; width: auto !important; height: auto !important; min-width: 1em !important; } " +
-                     ".m3-nav-indicator { overflow: visible !important; } " +
-                     ".m3-nav-indicator .material-symbols-rounded { overflow: visible !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; } " +
-                     ".m3-nav-bar__item:last-child .m3-nav-indicator .material-symbols-rounded { transform: translateY(-2px) !important; }";
+    private void backEvent(String detail) { runJs(backEventJs(detail)); }
 
-        String js = "(function() {" +
-                    "  if (document.getElementById('agy-icon-fix')) return;" +
-                    "  var style = document.createElement('style');" +
-                    "  style.id = 'agy-icon-fix';" +
-                    "  style.textContent = '" + css + "';" +
-                    "  (document.head || document.documentElement).appendChild(style);" +
-                    "})();";
+    private static String backEventJs(String detail) {
+        return "window.dispatchEvent(new CustomEvent('predictiveback',{detail:" + detail + "}))";
+    }
 
-        webView.post(() -> webView.evaluateJavascript(js, null));
+    private boolean vpnActive() {
+        try {
+            ConnectivityManager cm = getSystemService(ConnectivityManager.class);
+            NetworkCapabilities c = cm == null ? null : cm.getNetworkCapabilities(cm.getActiveNetwork());
+            return c != null && c.hasTransport(NetworkCapabilities.TRANSPORT_VPN);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void networkChanged() {
+        if (!offline) return;
+        runOnUiThread(() -> runJs("window.__offlineUpdate&&window.__offlineUpdate()"));
+        synchronized (probeLock) { probeLock.notifyAll(); }
+    }
+
+    // One background thread at a time: check /api/widget, load the dashboard once it answers, else wait 5 s (or until
+    // a network change or "Try again" wakes it).
+    private synchronized void startProbing() {
+        if (prober != null && prober.isAlive()) return;
+        prober = new Thread(() -> {
+            while (offline && !Thread.currentThread().isInterrupted()) {
+                try {
+                    Net.get("/api/widget", 16384);
+                    runOnUiThread(() -> {
+                        if (!offline) return;
+                        offline = false;
+                        WebView view = getBridge() != null ? getBridge().getWebView() : null;
+                        if (view != null) view.loadUrl(Net.BASE + "/");
+                    });
+                    return;
+                } catch (Exception ignored) { }
+                synchronized (probeLock) {
+                    try { probeLock.wait(5000); } catch (InterruptedException e) { return; }
+                }
+            }
+        }, "offline-retry");
+        prober.start();
+    }
+
+    private synchronized void stopProbing() {
+        if (prober != null) prober.interrupt();
+        prober = null;
     }
 }

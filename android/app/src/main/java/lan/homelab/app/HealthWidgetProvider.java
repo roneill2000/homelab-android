@@ -176,20 +176,6 @@ public class HealthWidgetProvider extends AppWidgetProvider {
         return v;
     }
 
-    private static String pair(JSONObject d, String a, String b) {
-        if (d.isNull(a) || d.isNull(b) || !d.has(a) || !d.has(b)) return "—";
-        return d.optLong(a) + " / " + d.optLong(b);
-    }
-
-    private static String dns(Context c, String s) {
-        switch (s) {
-            case "protected": return c.getString(R.string.widget_dns_on);
-            case "paused": return c.getString(R.string.widget_dns_paused);
-            case "mixed": return c.getString(R.string.widget_dns_mixed);
-            default: return "—";
-        }
-    }
-
     private static PendingIntent open(Context context, String path, int code) {
         Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("homelab://" + path), context, MainActivity.class)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);

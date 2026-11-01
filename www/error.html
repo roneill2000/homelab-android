@@ -11,17 +11,62 @@
     main { max-width: 360px; text-align: center; }
     h1 { margin: 0 0 12px; font-size: 24px; font-weight: 400; line-height: 32px; }
     p { margin: 0 0 28px; color: #a9bdb7; font-size: 16px; line-height: 24px; }
+    .actions { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
     button { min-height: 48px; padding: 0 28px; border: 0; border-radius: 999px; background: #a1d0c5; color: #00382f;
-      font: 500 14px/20px Roboto, system-ui, sans-serif; letter-spacing: .1px; }
+      font: 500 14px/20px Roboto, system-ui, sans-serif; letter-spacing: .1px; transition: border-radius .15s; }
+    button.tonal { background: #2a4a43; color: #c6e9e0; }
     button:active { border-radius: 12px; }
+    .status { margin: 20px 0 0; font-size: 14px; line-height: 20px; color: #8fa49e; min-height: 20px; }
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
   <main>
     <h1>Can&rsquo;t reach your homelab</h1>
-    <p>The dashboard at 192.168.0.2 didn&rsquo;t answer. Join your home Wi-Fi or turn on the VPN, then try again.</p>
-    <button type="button" onclick="location.replace('http://192.168.0.2/')">Try again</button>
+    <p id="advice">The dashboard at 192.168.0.2 didn&rsquo;t answer. Join your home Wi-Fi or turn on the VPN, then try again.</p>
+    <div class="actions">
+      <button type="button" id="vpn" hidden>Turn on WireGuard</button>
+      <button type="button" id="retry" class="tonal">Try again</button>
+    </div>
+    <p class="status" id="status" aria-live="polite"></p>
   </main>
-  <script>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.SplashScreen&&Capacitor.Plugins.SplashScreen.hide();</script>
+  <script>
+    window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.SplashScreen && Capacitor.Plugins.SplashScreen.hide();
+    // v1.8: the app retries in the background (every 5 s and on every network change) and opens the dashboard as soon
+    // as it answers; this page only explains and offers the VPN. Older builds without the bridge keep the plain retry.
+    (function () {
+      var B = window.AndroidBridge, advice = document.getElementById('advice'), vpn = document.getElementById('vpn'),
+          retry = document.getElementById('retry'), status = document.getElementById('status'), idle = 'Trying again automatically…';
+      var native = !!(B && B.offlineShown && B.vpnState && B.openVpn && B.retryNow);
+      function update() {
+        if (!native) return;
+        var on = B.vpnState() === 'vpn';
+        advice.textContent = on
+          ? 'Your VPN is on, but the dashboard at 192.168.0.2 isn’t answering. WireGuard may still be connecting, or the dashboard may be down.'
+          : 'The dashboard at 192.168.0.2 isn’t answering. Away from home? Turn on WireGuard and it opens by itself.';
+        vpn.textContent = on ? 'Open VPN app' : 'Turn on WireGuard';
+        vpn.className = on ? 'tonal' : '';
+        retry.className = on ? '' : 'tonal';
+      }
+      window.__offlineUpdate = update;
+      if (native) {
+        vpn.hidden = false;
+        status.textContent = idle;
+        update();
+        B.offlineShown();
+        vpn.onclick = function () {
+          var opened = B.openVpn();
+          if (!opened) status.textContent = 'No VPN app found. Install WireGuard from the Play Store.';
+        };
+        retry.onclick = function () {
+          status.textContent = 'Checking…';
+          B.retryNow();
+          setTimeout(function () { status.textContent = idle; }, 3000);
+        };
+      } else {
+        retry.onclick = function () { location.replace('http://192.168.0.2/'); };
+      }
+    })();
+  </script>
 </body>
 </html>
