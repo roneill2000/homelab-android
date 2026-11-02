@@ -19,18 +19,7 @@ Monitor, control and ask questions of a home lab from your phone, with Quick Set
 </div>
 
 <p align="center">
-  <img src="screenshots/overview.png" width="200" alt="Overview: homelab health and quick actions" />
-  &nbsp;
-  <img src="screenshots/ai.png" width="200" alt="Local AI: loaded model and Ask box" />
-  &nbsp;
-  <img src="screenshots/storage.png" width="200" alt="Storage: drive health and usage" />
-  &nbsp;
-  <img src="screenshots/infra.png" width="200" alt="Infrastructure: backups and nightly log review" />
-</p>
-<p align="center">
-  <img src="screenshots/quick-settings.png" width="200" alt="Quick Settings tiles" />
-  &nbsp;
-  <img src="screenshots/widget.jpg" width="200" alt="Home-screen widget" />
+  <img src="screenshots/gallery.png" width="720" alt="Screenshots: Overview, Local AI, Storage, Infrastructure, Quick Settings tiles and the home-screen widget" />
 </p>
 
 ---
