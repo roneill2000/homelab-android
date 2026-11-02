@@ -1,17 +1,20 @@
 <div align="center">
 
-<img src="screenshots/icon.png" width="96" alt="Homelab app icon" />
+<img src="screenshots/social-preview.png" alt="Homelab: your home lab, in your pocket" />
 
-# Homelab
+<h1>Homelab for Android</h1>
 
 **A native Android companion for the [Homelab Command Center](https://github.com/roneill2000/homelab-dashboard).**
 Monitor, control and ask questions of a home lab from your phone, with Quick Settings tiles, a home-screen widget and instant alerts.
 
-[![Version](https://img.shields.io/badge/version-1.9-1f4d45)](CHANGELOG.md)
+[![Latest release](https://img.shields.io/github/v/release/roneill2000/homelab-android?label=release&color=1f4d45)](https://github.com/roneill2000/homelab-android/releases/latest)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)](#requirements)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Material You](https://img.shields.io/badge/Material_You-dynamic_colour-6750A4?logo=materialdesign&logoColor=white)](#features)
+[![License: MIT](https://img.shields.io/github/license/roneill2000/homelab-android?color=blue)](LICENSE)
 
-[**Download APK**](https://github.com/roneill2000/homelab-android/raw/main/release/Homelab-release.apk) · [Features](#features) · [Install](#install) · [Changelog](CHANGELOG.md)
+<a href="https://github.com/roneill2000/homelab-android/releases/latest/download/Homelab-release.apk"><img src="https://img.shields.io/badge/Download_APK-1f4d45?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" height="40" /></a>
+
+[Features](#features) · [Install](#install) · [Privacy](#privacy--security) · [Changelog](CHANGELOG.md)
 
 </div>
 
@@ -88,17 +91,10 @@ flowchart LR
 
 ## Install
 
-1. Download [**Homelab-release.apk**](https://github.com/roneill2000/homelab-android/raw/main/release/Homelab-release.apk) (3.72 MB) on the phone and open it. Allow installing from your browser if Android asks.
-2. Or from a computer: `adb install -r release/Homelab-release.apk`
+1. On the phone, download **Homelab-release.apk** from the [latest release](https://github.com/roneill2000/homelab-android/releases/latest) (3.7 MB) and open it. Allow installing from your browser if Android asks.
+2. Or from a computer: `adb install -r Homelab-release.apk`
 
-**Verify the download**
-
-| | |
-|---|---|
-| SHA-256 | `fb01cc32a549a61dd2b67037d3fa7d6e8212c55b3f99c5d9242a149296544269` |
-| Signature | APK signature schemes v1, v2 and v3; certificate valid to 2054 |
-
-Updates install over the previous version (same signing key since 1.4).
+Updates install over the previous version (same signing key since 1.4). Every release lists the APK's SHA-256 so you can verify the download (`sha256sum Homelab-release.apk`); APKs are signed with schemes v1, v2 and v3 (certificate valid to 2054).
 
 ---
 

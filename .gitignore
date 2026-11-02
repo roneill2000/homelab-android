@@ -8,3 +8,6 @@ android/app/keystore.properties
 *.keystore
 *.jks
 .DS_Store
+
+# APKs are published as GitHub Release assets, not committed
+release/*.apk
