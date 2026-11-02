@@ -6,4 +6,8 @@
     <color name="widget_on_variant">#FFA9BDB7</color>
     <color name="widget_accent">#FFBCECE1</color>
     <color name="widget_attention">#FFFFB4AB</color>
+    <color name="widget_accent_container">#FF2E5E55</color>
+    <color name="widget_on_accent">#FFE5F5F0</color>
+    <color name="widget_on_accent_variant">#FFB9D6CF</color>
+    <color name="widget_warn">#FFFFB870</color>
 </resources>

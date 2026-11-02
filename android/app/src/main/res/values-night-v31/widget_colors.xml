@@ -6,4 +6,8 @@
     <color name="widget_on_variant">@android:color/system_neutral2_200</color>
     <color name="widget_accent">@android:color/system_accent1_200</color>
     <color name="widget_attention">#FFFFB4AB</color>
+    <color name="widget_accent_container">@android:color/system_accent1_700</color>
+    <color name="widget_on_accent">@android:color/system_accent1_50</color>
+    <color name="widget_on_accent_variant">@android:color/system_accent1_200</color>
+    <color name="widget_warn">#FFFFB870</color>
 </resources>

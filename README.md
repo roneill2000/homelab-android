@@ -29,7 +29,7 @@ Monitor, control and ask questions of a home lab from your phone, with Quick Set
 ### At a glance
 - **Full-screen dashboard** with 120 Hz scrolling, an edge-to-edge layout around the camera cutout and gesture bar, and no browser chrome.
 - **Material You.** On Android 14+ the dashboard uses the system's own colour roles from your wallpaper, so it matches your other apps. Light and dark follow the system.
-- **Home-screen widget** in four sizes: gaming PC state (asleep, idle, model loaded or generating, with GPU watts, temperature, load and VRAM), downloads and a problems line. It keeps the last reading, marked *Away*, when you are not home.
+- **Status-first home-screen widget.** *All clear* or the problems at the top, then the gaming PC (model and state; GPU power, temperature, load and VRAM only while it is busy), storage, internet, DNS blocking, now playing, downloads and pending updates. Three sizes; each cell opens its page; the last reading stays, marked *Away*, when you are not home.
 
 ### One-tap control
 | Quick Settings tile | Shows | Tap |
