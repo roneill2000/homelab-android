@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="screenshots/social-preview.png" alt="Homelab: your home lab, in your pocket" />
+<img src="screenshots/social-preview.png" alt="Homelab for Android" />
 
 <h1>Homelab for Android</h1>
 
