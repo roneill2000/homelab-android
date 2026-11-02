@@ -14,6 +14,8 @@ final class ModelNames {
             case "qwen3.8-27b-uncensored": return "Qwen3.8 27B Uncensored";
             case "gemma-4-26b-a4b": return "Gemma 4 26B MoE";
             case "qwen3.6-35b-moe": return "Qwen3.6 35B MoE";
+            case "qwen3.8-flash-next-iq3_xxs": return "Strata · Qwen3.8 Flash IQ3_XXS";
+            case "qwen3.8-flash-next-coder-iq1_m": return "Strata · Qwen3.8 Coder IQ1_M";
             default: break;
         }
         // Strata: swift-1.5-iq3_xxs -> "Strata · Swift 1.5 IQ3_XXS"
@@ -24,5 +26,5 @@ final class ModelNames {
         return id;
     }
 
-    static boolean isStrata(String id) { return id != null && id.startsWith("swift-"); }
+    static boolean isStrata(String id) { return id != null && (id.startsWith("swift-") || id.startsWith("qwen3.8-flash-next")); }
 }

@@ -7,6 +7,7 @@ All notable changes to the Homelab Android app. Versions match `versionName` in 
 ### Changed
 - **Status-first home-screen widget.** The header says *All clear* or names the problems. A Gaming PC card shows the loaded model or state, with GPU power, temperature, load and VRAM only while it is generating or busy. Below it: storage (array and cache), internet speed, DNS blocking, now playing, downloads and pending updates. Every cell opens its page.
 - Three sizes: one-line status, a 2 × 2 summary (PC, storage, internet, DNS), and the full widget.
+- Friendly names for Qwen3.8 Flash and Qwen3.8 Coder.
 
 ## 1.9 — 2026-11-01
 
